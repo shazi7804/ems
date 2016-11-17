@@ -1,0 +1,127 @@
+#!/bin/bash
+#
+# Program: Use ssh to automatically login system and remote command
+# Author: shazi
+# Github: https://github.com/shazi7804
+
+# Source config
+Confdir="/Users/scott/Development/shazi7804.github/shakey/config"
+
+# Login RSA key 
+Keydir="~/.ssh/key"
+Key="$Keydir/shakey.key"
+
+# Max connect timeout 
+Time_Retry=5
+
+
+for f in $Confdir/*.conf; do source $f; done
+
+helpmsg(){
+	echo ""
+	echo "Usage: $0 [HOST] [OPTION] [command]"
+	echo ""
+	echo "[OPTION]"
+	echo "  -l              Filter the displayed project name (default all)"
+	echo "  -h,--help       help message."
+	echo ""
+	echo "Login system example:"
+	echo "  $ go devops"
+	echo "  $ go demo"
+	echo ""
+	echo "Remote command, last add command:"
+	echo "  $ go devops pwd"
+	echo "  $ go demo ls -l"
+	echo ""
+}
+
+HostList(){
+	echo ""
+	echo "Server Info:"
+	echo ""
+	printf "   %-10s %-15s %-15s\n" 'cmd' 'HostName' 'IP'
+	printf "%s\n" "-----------------------------------------------"
+	if [[ $1 ]]; then
+		filter=$1
+		shift
+		for (( i = 0; i < ${#Alias[@]}; i++ )); do
+			if [[ $filter == ${Project[i]} ]]; then
+				printf "   %-10s %-15s %-15s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
+			fi
+		done
+	else
+		for (( i = 0; i < ${#Alias[@]}; i++ )); do
+			printf "   %-10s %-15s %-15s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
+		done
+
+	fi
+	echo ""
+	echo ""
+}
+
+Rlogin(){
+	shift
+	for (( i = 0; i <${#Server[@]}; i++ )); do
+		if [[ $Host == ${Alias[i]} ]]; then
+			ssh -i $Key -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry root@${IP[i]}
+		fi
+	done
+}
+
+Rcmd(){
+	shift
+	for (( i = 0; i <${#Server[@]}; i++ )); do
+		if [[ $Host == ${Alias[i]} ]]; then
+			ssh -i $Key -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry root@${IP[i]} "$@"
+		fi
+	done
+	exit 0
+}
+
+
+if [[ $# -gt 0 ]]; then
+	for opt in $@
+	do
+		case $opt in
+			-h|--help)
+				helpmsg
+				;;
+			-l)
+				shift
+				if [[ $1 ]]; then
+					ListDest=$1
+					shift
+					HostList $ListDest
+				else
+					echo "Warnning: You must select a project name !!"
+					echo "${Project[@]}" | tr ' ' '\n' | sort -u
+					echo ""
+				fi
+				;;
+			*)
+				Host=$1
+				shift
+				if [[ $@ ]]; then
+					Cmd=$@
+					Rcmd $Host $Cmd
+				else
+					Rlogin $Host
+				fi
+				;;
+		esac
+	done
+else
+	HostList
+fi
+
+
+
+
+
+
+
+
+
+
+
+
