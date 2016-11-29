@@ -66,16 +66,17 @@ Welcome() {
 }
 
 ems_setup(){
-	local exconfig
+	local exconfig exsbin exlib
 	exconfig=$ems_local/example-config
 	exsbin=$ems_local/sbin
+	exlib=$ems_local/lib
 
 	WorkingStatus Process "Install ems"
 	if [[ -n $ems_postfix ]] && [[ -n $ems_version ]]; then
 		if [[ ! -d $ems_postfix-$ems_version ]]; then
 			mkdir -p $ems_postfix-$ems_version
 		fi
-		cp -R $exconfig $exsbin $ems_postfix-$ems_version/
+		cp -R $exconfig $exsbin $exlib $ems_postfix-$ems_version/
 	fi
 
 	if [[ -L $ems_postfix ]]; then
@@ -88,8 +89,9 @@ ems_setup(){
 		WorkingStatus Fail "Install ems"	
 	fi
 
-	chmod 500 $ems_postfix/sbin/ems
+	chmod 500 $ems_postfix/sbin/ems*
 	ln -fs $ems_postfix/sbin/ems /usr/sbin/
+	ln -fs $ems_postfix/sbin/ems-keygen /usr/sbin/
 	if [[ $? -ne 0 ]]; then
 		WorkingStatus Fail "Install ems"
 	fi

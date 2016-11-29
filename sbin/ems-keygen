@@ -1,0 +1,101 @@
+#!/bin/bash
+#
+# Program: ems generate the rsa key tool
+# Author: shazi
+# Github: https://github.com/shazi7804
+
+emsConfig="/etc/ems/ems.conf"
+
+TYPE=rsa
+BITS=4096
+
+
+trap 'stop' SIGUSR1 SIGINT SIGHUP SIGQUIT SIGTERM SIGSTOP
+
+stop() {
+    exit 0
+}
+
+
+helpmsg(){
+	echo ""
+	echo "Usage: $0 [HOST] [option] [command]"
+	echo ""
+	echo "[option]"
+	echo "  -t,type       Specify type of key to create. (default: rsa)"
+	echo "  -b,bits       Number of bits in the key to create. (default: 4096)"
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+}
+
+keygen(){
+	if which ssh-keygen &>/dev/null; then
+		if [[ ! -d $ems_postfix/tmp ]]; then
+			mkdir -p $ems_postfix/tmp
+		fi
+		ems_tmp=$ems_postfix/tmp
+		echo "Generate the $TYPE key !!"
+		ssh-keygen -t $TYPE -b $BITS -q -f $ems_tmp/ems -P ''
+		if [[ $? -ne 0 ]]; then
+			echo "ems-genkey error: Generate the $TYPE key fail."
+		fi
+
+		ems_public=$(cat $ems_tmp/ems.pub)
+		ems_private=$(cat $ems_tmp/ems)
+
+		createtime=$(date +%Y-%m-%d)
+		expiretime=$(date +%Y-%m-%d -d '+3650day')
+		# write key information to database
+		MYSQLcmd INSERT "INSERT INTO ems_keystore(publickey,privatekey,createtime,expiretime) VALUES('$ems_public','$ems_private','$createtime','$expiretime');"
+		if [[ $? -eq 0 ]]; then
+			$(MYSQLcmd SELECT "SELECT MAX(id) FROM ems_keystore;")
+			lastId=$?
+			
+			MYSQLcmd SELECT "SELECT id,createtime,expiretime FROM ems_keystore WHERE id=$lastId;"
+			rm $ems_tmp/ems $ems_tmp/ems.pub
+		else
+			echo "ems-genkey error: Failed to write to the database."
+		fi
+
+	else
+		echo "ems-genkey error: The ssh-keygen command not found."
+	fi
+}
+
+# include ems config
+if [[ -n $emsConfig ]] && [[ -e $emsConfig ]]; then
+	source $emsConfig
+else
+	echo "ems-genkey error: ems config not found."
+	exit 1
+fi
+
+# include mysql connect lib
+if [[ -n $ems_lib_mysql ]] && [[ -e $ems_lib_mysql ]]; then
+	source $ems_lib_mysql
+else
+	echo "ems-genkey error: ems_lib_mysql not found."
+	exit 1
+fi
+
+for opt in $@
+do
+	case $opt in
+		-t|type)
+			shift
+			TYPE=$1
+			shift
+			;;
+		-b|bits)
+			shift
+			BITS=$1
+			shift
+			;;
+	esac
+done
+
+keygen

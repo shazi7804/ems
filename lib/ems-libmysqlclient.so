@@ -1,0 +1,111 @@
+# ems mysql connect lib
+
+data_type="mysql"
+db_HOST="localhost"
+db_NAME="ems"
+db_USER="ems"
+db_PWD="emspwd"
+
+MYSQL_ARGS="mysql -h $db_HOST -u$db_USER -p$db_PWD -D$db_NAME -N -se"
+
+MYSQLcmd(){
+	local action
+	action=$1
+	shift
+
+	case $action in
+		INSERT|insert)
+			mysql -h $db_HOST -u$db_USER -p$db_PWD $db_NAME -se "$@"
+			if [[ $? -eq 0 ]]; then
+				return 0
+			else
+				return 1
+			fi		
+			;;
+		SELECT|select)
+			datareturn=$(mysql -h $db_HOST -u$db_USER -p$db_PWD -D$db_NAME -se "$@")
+			return $datareturn
+			;;
+		UPDATE|update)
+			echo update 
+			;;
+		DELETE|delete)
+			echo delete
+			;;
+	esac
+}
+
+InsertValue() {
+ echo 0
+}
+
+GetValue() {
+
+	unset SQLValue count
+
+	for opt in $@
+	do
+		case $opt in
+			-t=*|--table=*)
+				Table="${opt#*=}"
+				;;
+			-f=*|--field=*)
+				Field="${opt#*=}"
+				;;
+			-w=*|--where=*)
+				Where="${opt#*=}"
+				;;
+		esac	
+	done
+
+	if [[ $Where ]]; then
+		SQLValue="SELECT $Field FROM $Table WHERE $Where"
+	else
+		SQLValue="SELECT $Field FROM $Table"
+	fi
+	
+	OutValue=$($MYSQL_ARGS "$SQLValue" 2>&1)
+	if [[ $? -gt 0 ]]; then
+		echo "ems error: sql exec error on $SQLValue"
+	fi
+
+	FieldArray=($(echo $Field | tr ',' ' '))
+	if [[ ${#FieldArray[@]} -gt 1 ]]; then
+		for (( i = 0; i < ${#FieldArray[@]}; i++ )); do	
+			num=$i
+			declare -x $num
+			
+			FieldArray$num="aaa123"
+			# count=0
+			# while [ "${FieldArray[count]}" ]; do
+			# 	FieldArray$i+=($(echo ${FieldArray[count]}))
+			# 	count=$(( $count + 2 ))
+			# done
+		done
+	fi
+
+	#ValueArray=(${OutValue//\r/ })
+}
+
+GetValue --table=ems_keystore --field=id,createtime --where=id=\'28\'
+
+
+echo $FieldArray1
+
+
+# OIFS="$IFS" ; IFS=$'\n' ; oset="$-" ; set -f
+
+# while IFS="$OIFS" read -a line 
+# do 
+#   echo ${line[0]}   
+#   echo ${line[1]}   
+# done < $GetValue
+
+# echo ${ValueArray[0]}
+# echo ${ValueArray[1]}
+# echo ${ValueArray[2]}
+
+# echo "${ValueArray[@]: ++2}"
+
+
+

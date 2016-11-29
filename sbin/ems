@@ -10,6 +10,13 @@ ems_version="1.0"
 # ems config
 emsConfig="/etc/ems/ems.conf"
 
+
+trap 'stop' SIGUSR1 SIGINT SIGHUP SIGQUIT SIGTERM SIGSTOP
+
+stop() {
+    exit 0
+}
+
 helpmsg(){
 	echo ""
 	echo "Usage: $0 [HOST] [option] [command]"
@@ -96,10 +103,9 @@ esac
 # include config
 if [[ -n $emsConfig ]] && [[ -e $emsConfig ]]; then
 	source $emsConfig
-
 	if ls $ems_sitelist &>/dev/null; then
 		if [[ "testing" == $config_opt ]]; then
-			echo "ems notice: configuration file $emsConfig test is successful."
+			echo "ems notice: configuration file $emsConfig test is successfu.l"
 			echo ""
 		else
 			for q in $ems_sitelist/*.conf; do source $q; done
@@ -110,6 +116,7 @@ if [[ -n $emsConfig ]] && [[ -e $emsConfig ]]; then
 	fi
 else
 	echo "ems error: ems config not found."
+	exit 1
 fi
 
 if [[ $# -gt 0 ]]; then
