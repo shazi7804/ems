@@ -1,12 +1,39 @@
 # setup ems
 #
-# Program: ems setup work
+# Program: ems setup
 # Author: scott
 # Github: https://github.com/shazi7804
-trap 'stop' SIGUSR1 SIGINT SIGHUP SIGQUIT SIGTERM SIGSTOP
 
-stop() {
-    exit 0
+ems_ver="1.0"
+ems_prefix="/opt/ems"
+ems_config="${ems_prefix}/config/ems.conf"
+ems_sbin="${ems_prefix}/sbin"
+ems_sitelist="${ems_prefix}/config/site-conf.d"
+
+Welcome() {
+	echo ""
+	echo "----------------------------------------------"
+	echo "-  Welcome to use the ems installation tool  -"
+	echo "----------------------------------------------"
+	echo "This tool will be installed in accordance with the following environment:"
+	echo ""
+	echo "Version = $ems_ver"
+	echo "prefix  = $ems_prefix"
+	echo "config  = $ems_config"
+	echo "sbin    = $ems_sbin"
+	echo ""
+	read -n1 -r -p "ems is ready to be installed, press any key to continue..."
+	echo ""
+}
+
+helpmsg() {
+	echo ""
+	echo "Usage: $0 [option]"
+  echo ""
+  echo "option:"
+  echo "  --prefix=PATH     set installation prefix."
+  echo "                    (default: $ems_prefix)"
+	echo ""
 }
 
 WorkingStatus() {
@@ -30,85 +57,68 @@ WorkingStatus() {
 	fi
 }
 
-initialize(){
-	local ini	
-	# check setup.ini
-	ini=$ems_local/$1
-	shift
-
-	if [[ -n $ini ]]; then
-		source $ini
-	else
-		echo "ems warn: Initialization failed, \"$ini\" configuration file does not exist."
-		exit 1
-	fi
-
-	# check root access
-	if [[ "$EUID" -ne 0 ]]; then
-		echo -e "Sorry, you need to run this as root"
-		exit 1
-	fi
-}
-
-
-Welcome() {
-	echo ""
-	echo "----------------------------------------------"
-	echo "-  Welcome to use the ems installation tool  -"
-	echo "----------------------------------------------"
-	echo "This tool will be installed in accordance with the following environment:"
-	echo ""
-	echo "ems_sbin=$ems_sbin"
-	echo "ems_config=$ems_config"
-	echo ""
-	read -n1 -r -p "ems is ready to be installed, press any key to continue..."
-	echo ""
-}
 
 ems_setup(){
-	local exconfig
-	exconfig=$ems_local/example-config
-	exsbin=$ems_local/sbin
-
 	WorkingStatus Process "Install ems"
-	if [[ -n $ems_postfix ]] && [[ -n $ems_version ]]; then
-		if [[ ! -d $ems_postfix-$ems_version ]]; then
-			mkdir -p $ems_postfix-$ems_version
+	if [ -n $ems_prefix ] && [ -n $ems_ver ]; then
+		if [ ! -d $ems_prefix-$ems_ver ]; then
+			mkdir -p $ems_prefix-$ems_ver
 		fi
-		cp -R $exconfig $exsbin $ems_postfix-$ems_version/
+		cp -R config sbin $ems_prefix-$ems_ver/
 	fi
 
-	if [[ -L $ems_postfix ]]; then
-		rm $ems_postfix
+	if [ -L $ems_prefix ]; then
+		unlink $ems_prefix
 	fi
 
 	# create softlink
-	ln -fs $ems_postfix-$ems_version $ems_postfix
+	ln -fs $ems_prefix-$ems_ver $ems_prefix
 	if [[ $? -ne 0 ]]; then
 		WorkingStatus Fail "Install ems"	
 	fi
 
-	chmod 500 $ems_postfix/sbin/ems
-	ln -fs $ems_postfix/sbin/ems /usr/sbin/
+	chmod 500 $ems_prefix/sbin/ems
 	if [[ $? -ne 0 ]]; then
 		WorkingStatus Fail "Install ems"
+	else
+		WorkingStatus OK "Install ems"
 	fi
 
-	# copy config
-	if [[ ! -d $ems_config ]]; then
-		mkdir -p $ems_config
-	fi
-	cp -R $exconfig/* $ems_config/
-
-	WorkingStatus OK "Install ems"
-
+  WorkingStatus Process "Write to ems.conf"
+  if [ -f $ems_prefix/config/ems.conf ]; then
+  	echo "
+# ems configure path
+ems_ver="$ems_ver"
+ems_prefix="$ems_prefix"
+ems_config="$ems_config"
+ems_sbin="$ems_sbin"
+ems_sitelist="$ems_sitelist"
+  	" >> $ems_prefix/config/ems.conf
+  	WorkingStatus OK "Write to ems.conf"
+  else
+  	WorkingStatus Fail "Write to ems.conf"
+  fi
 }
 
-ems_local=$(pwd)
 
-initialize setup.ini
+for opt in $@
+do
+  case $opt in
+    --prefix=*)
+      shift
+      ems_prefix="${opt#*=}"
+      ;;
+    -h|--help)
+      helpmsg
+      exit 1
+      ;;
+  esac
+done
+
+
 Welcome
 ems_setup
+
 if [[ $? -eq 0 ]]; then
 	echo ""
 	echo "Installation successful !! You can enjoy the ems."
@@ -117,6 +127,7 @@ if [[ $? -eq 0 ]]; then
 	echo ""
 	echo "$ ems --version"
 	echo ""
+	echo "HowTo use ems: https://github.com/shazi7804/ems"
 else
 	echo "ems install failed, check your setup.ini"
 fi

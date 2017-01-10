@@ -5,19 +5,12 @@
 # Author: shazi
 # Github: https://github.com/shazi7804
 
-ems_version="1.0"
-
-# ems config
-emsConfig="/etc/ems/ems.conf"
-
 helpmsg(){
 	echo ""
 	echo "Usage: $0 [HOST] [option] [command]"
 	echo ""
 	echo "[option]"
 	echo "  -l              Filter the displayed type name (default all)"
-	echo "  -t              Verify that the configuration file is correct."
-	echo "                  $ ems -t /etc/ems/ems.conf"
 	echo "  -h,--help       help message."
 	echo "  -v,--version    show ems version."
 	echo ""
@@ -37,7 +30,7 @@ HostList(){
 	echo ""
 	printf "   %-10s %-15s %-15s\n" 'Alias' 'HostName' 'IP'
 	printf "%s\n" "-----------------------------------------------"
-	if [[ $1 ]]; then
+	if [ $1 ]; then
 		filter=$1
 		shift
 		for (( i = 0; i < ${#Alias[@]}; i++ )); do
@@ -81,7 +74,7 @@ case $@ in
 		exit 0
 		;;
 	-v|--version)
-		echo "ems (Easy Manage Server) $ems_version"
+		echo "ems (Easy Manage Server) $ems_ver"
 		echo "Copyright (C) 2016 The ems Author shazi"
 		echo ""
 		echo "This is free software."
@@ -94,23 +87,27 @@ case $@ in
 esac
 
 # include config
-if [[ -n $emsConfig ]] && [[ -e $emsConfig ]]; then
-	source $emsConfig
-
-	if ls $ems_sitelist &>/dev/null; then
-		if [[ "testing" == $config_opt ]]; then
-			echo "ems notice: configuration file $emsConfig test is successful."
-			echo ""
-		else
-			for q in $ems_sitelist/*.conf; do source $q; done
-		fi
-				
-	else
-		echo "ems warn: The site list data not found."
-	fi
+if [ -e /opt/ems/config/ems.conf ]; then
+	source /opt/ems/config/ems.conf
+elif [ -e /etc/ems/ems.conf ]; then
+	source /etc/ems/ems.conf
 else
 	echo "ems error: ems config not found."
 fi
+
+
+if ls $ems_sitelist &>/dev/null; then
+	if [[ "testing" == $config_opt ]]; then
+		echo "ems notice: configuration file $ems_config test is successful."
+		echo ""
+	else
+		for q in $ems_sitelist/*.conf; do source $q; done
+	fi
+			
+else
+	echo "ems warn: The site list data not found."
+fi
+
 
 if [[ $# -gt 0 ]]; then
 	for opt in $@
@@ -118,7 +115,7 @@ if [[ $# -gt 0 ]]; then
 		case $opt in
 			-l)
 				shift
-				if [[ $1 ]]; then
+				if [ $1 ]; then
 					Listfilter=$1
 					HostList $Listfilter
 				else
@@ -130,7 +127,7 @@ if [[ $# -gt 0 ]]; then
 			*)
 				Host=$1
 				shift
-				if [[ $@ ]]; then
+				if [ $@ ]; then
 					Cmd=$@
 					Rcmd $Host $Cmd
 				else
@@ -142,12 +139,6 @@ if [[ $# -gt 0 ]]; then
 else
 	HostList
 fi
-
-
-
-
-
-
 
 
 
