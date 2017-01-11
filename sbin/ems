@@ -5,6 +5,8 @@
 # Author: shazi
 # Github: https://github.com/shazi7804
 
+# ems config path, not deleting rows
+
 helpmsg(){
 	echo ""
 	echo "Usage: $0 [HOST] [option] [command]"
@@ -28,19 +30,19 @@ HostList(){
 	echo ""
 	echo "Server Info:"
 	echo ""
-	printf "   %-10s %-15s %-15s\n" 'Alias' 'HostName' 'IP'
+	printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'Alias' 'HostName' 'IP'
 	printf "%s\n" "-----------------------------------------------"
 	if [ $1 ]; then
 		filter=$1
 		shift
 		for (( i = 0; i < ${#Alias[@]}; i++ )); do
 			if [[ $filter == ${Type[i]} ]]; then
-				printf "   %-10s %-15s %-15s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
+				printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
 			fi
 		done
 	else
 		for (( i = 0; i < ${#Alias[@]}; i++ )); do
-			printf "   %-10s %-15s %-15s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
+			printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n"  ${Alias[i]} ${Server[i]} ${IP[i]}
 		done
 
 	fi
@@ -87,10 +89,8 @@ case $@ in
 esac
 
 # include config
-if [ -e /opt/ems/config/ems.conf ]; then
-	source /opt/ems/config/ems.conf
-elif [ -e /etc/ems/ems.conf ]; then
-	source /etc/ems/ems.conf
+if [ -e $ems_config ]; then
+	source $ems_config
 else
 	echo "ems error: ems config not found."
 fi

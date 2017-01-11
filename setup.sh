@@ -6,9 +6,7 @@
 
 ems_ver="1.0"
 ems_prefix="/opt/ems"
-ems_config="${ems_prefix}/config/ems.conf"
-ems_sbin="${ems_prefix}/sbin"
-ems_sitelist="${ems_prefix}/config/site-conf.d"
+
 
 Welcome() {
 	echo ""
@@ -77,7 +75,7 @@ ems_setup(){
 		WorkingStatus Fail "Install ems"	
 	fi
 
-	chmod 500 $ems_prefix/sbin/ems
+	chmod 555 $ems_prefix/sbin/ems
 	if [[ $? -ne 0 ]]; then
 		WorkingStatus Fail "Install ems"
 	else
@@ -98,6 +96,15 @@ ems_sitelist="$ems_sitelist"
   else
   	WorkingStatus Fail "Write to ems.conf"
   fi
+
+  WorkingStatus Process "Write to ems path"
+  # add config next line
+  sed -i "/ems\ config\ path\,\ not\ deleting\ rows/aems_config\=$ems_config" $ems_sbin/ems
+  if [[ $? -ne 0 ]]; then
+  	WorkingStatus Fail "Write to ems path"
+  else
+  	WorkingStatus OK "Write to ems path"
+  fi
 }
 
 
@@ -115,6 +122,9 @@ do
   esac
 done
 
+ems_config="${ems_prefix}/config/ems.conf"
+ems_sbin="${ems_prefix}/sbin"
+ems_sitelist="${ems_prefix}/config/site-conf.d"
 
 Welcome
 ems_setup
