@@ -8,136 +8,134 @@
 # ems config path, not deleting rows
 
 helpmsg(){
-	echo ""
-	echo "Usage: $0 [HOST] [option] [command]"
-	echo ""
-	echo "[option]"
-	echo "  -l              Filter the displayed type name (default all)"
-	echo "  -h,--help       help message."
-	echo "  -v,--version    show ems version."
-	echo ""
-	echo "Login system example:"
-	echo "  $ ems devops"
-	echo "  $ ems demo"
-	echo ""
-	echo "Remote command, last add command:"
-	echo "  $ ems devops pwd"
-	echo "  $ ems demo ls -l"
-	echo ""
+  echo ""
+  echo "Usage: $0 [HOST] [option] [command]"
+  echo ""
+  echo "[option]"
+  echo "  -l              Filter the displayed type name (default all)"
+  echo "  -h,--help       help message."
+  echo "  -v,--version    show ems version."
+  echo ""
+  echo "Login system example:"
+  echo "  $ ems devops"
+  echo "  $ ems demo"
+  echo ""
+  echo "Remote command, last add command:"
+  echo "  $ ems devops pwd"
+  echo "  $ ems demo ls -l"
+  echo ""
 }
 
 HostList(){
-	echo ""
-	echo "Server Info:"
-	echo ""
-	printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'Alias' 'HostName' 'IP'
-	printf "%s\n" "-----------------------------------------------"
-	if [ $1 ]; then
-		filter=$1
-		shift
-		for (( i = 0; i < ${#Alias[@]}; i++ )); do
-			if [[ $filter == ${Type[i]} ]]; then
-				printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
-			fi
-		done
-	else
-		for (( i = 0; i < ${#Alias[@]}; i++ )); do
-			printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n"  ${Alias[i]} ${Server[i]} ${IP[i]}
-		done
-
-	fi
-	echo ""
-	echo ""
+  echo ""
+  echo "Server Info:"
+  echo ""
+  printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'Alias' 'HostName' 'IP'
+  printf "%s\n" "-----------------------------------------------"
+  if [ $1 ]; then
+    filter=$1
+    shift
+    for (( i = 0; i < ${#Alias[@]}; i++ )); do
+      if [[ $filter == ${Type[i]} ]]; then
+        printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
+      fi
+    done
+  else
+    for (( i = 0; i < ${#Alias[@]}; i++ )); do
+      printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n"  ${Alias[i]} ${Server[i]} ${IP[i]}
+    done
+  fi
+  echo ""
 }
 
 Remotelogin(){
-	shift
-	for (( i = 0; i <${#Server[@]}; i++ )); do
-		if [[ $Host == ${Alias[i]} ]]; then
-			ssh -i $Key -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]}
-		fi
-	done
+  shift
+  for (( i = 0; i <${#Server[@]}; i++ )); do
+    if [[ $Host == ${Alias[i]} ]]; then
+      ssh -i $Key -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]}
+    fi
+  done
 }
 
 Rcmd(){
-	shift
-	for (( i = 0; i <${#Server[@]}; i++ )); do
-		if [[ $Host == ${Alias[i]} ]]; then
-			ssh -i $Key -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]} "$@"
-		fi
-	done
-	exit 0
+  shift
+  for (( i = 0; i <${#Server[@]}; i++ )); do
+    if [[ $Host == ${Alias[i]} ]]; then
+      ssh -i $Key -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]} "$@"
+    fi
+  done
+  exit 0
 }
 
 # not include config function.
 case $@ in
-	-h|--help)
-		helpmsg
-		exit 0
-		;;
-	-v|--version)
-		echo "ems (Easy Manage Server) $ems_ver"
-		echo "Copyright (C) 2016 The ems Author shazi"
-		echo ""
-		echo "This is free software."
-		echo ""
-		echo "github: http://github.com/shazi7804"
-		echo "blog: http://shazi.info"
-		echo ""
-		exit 0
-		;;
+  -h|--help)
+    helpmsg
+    exit 0
+    ;;
+  -v|--version)
+    echo "ems (Easy Manage Server) $ems_ver"
+    echo "Copyright (C) 2016-2017 The ems Author shazi"
+    echo ""
+    echo "This is free software."
+    echo ""
+    echo "github: http://github.com/shazi7804"
+    echo "blog: http://shazi.info"
+    echo ""
+    exit 0
+    ;;
 esac
 
 # include config
 if [ -e $ems_config ]; then
-	source $ems_config
+  source $ems_config
 else
-	echo "ems error: ems config not found."
+  echo "ems error: ems config not found."
 fi
 
 
 if ls $ems_sitelist &>/dev/null; then
-	if [[ "testing" == $config_opt ]]; then
-		echo "ems notice: configuration file $ems_config test is successful."
-		echo ""
-	else
-		for q in $ems_sitelist/*.conf; do source $q; done
-	fi
-			
+  if [[ "testing" == $config_opt ]]; then
+    echo "ems notice: configuration file $ems_config test is successful."
+    echo ""
+  else
+    for q in $ems_sitelist/*.conf; do source $q; done
+  fi
 else
-	echo "ems warn: The site list data not found."
+  echo "ems warn: The site list data not found."
 fi
 
 
 if [[ $# -gt 0 ]]; then
-	for opt in $@
-	do
-		case $opt in
-			-l)
-				shift
-				if [ $1 ]; then
-					Listfilter=$1
-					HostList $Listfilter
-				else
-					echo "ems warn: You must select a type name !!"
-					echo "${Type[@]}" | tr ' ' '\n' | sort -u
-					echo ""
-				fi
-				;;
-			*)
-				Host=$1
-				shift
-				if [ $@ ]; then
-					Cmd=$@
-					Rcmd $Host $Cmd
-				else
-					Remotelogin $Host
-				fi
-				;;
-		esac
-	done
+  for opt in $@
+  do
+    case $opt in
+      -l)
+        shift
+        if [ $1 ]; then
+          Listfilter=$1
+          HostList $Listfilter
+        else
+          echo "ems warn: You must select a type name !!"
+          echo ""
+          echo "${Type[@]}" | tr ' ' '\n' | sort -u
+          echo ""
+        fi
+        ;;
+      *)
+        Host=$1
+        shift
+        if [ $@ ]; then
+          Cmd=$@
+          Rcmd $Host $Cmd
+        else
+          Remotelogin $Host
+        fi
+        ;;
+    esac
+  done
 else
-	HostList
+  HostList
 fi
 
 
