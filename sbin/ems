@@ -7,26 +7,33 @@
 
 # ems config path, not deleting rows
 
+# text format
+BaseLine='\033[4m'
+Reset='\033[0m'
+
 helpmsg(){
   echo ""
-  echo "Usage: $0 [HOST] [option] [command]"
+  echo -e "Usage: $0 [option|host] [command]"
   echo ""
-  echo "[option]"
-  echo "  -l              Filter the displayed type name (default all)"
-  echo "  -h,--help       help message."
-  echo "  -v,--version    show ems version."
+  echo -e "[option]"
+  echo -e "  init ${BaseLine}ems,host${Reset}     The initialization ssh key."
   echo ""
-  echo "Login system example:"
-  echo "  $ ems devops"
-  echo "  $ ems demo"
+  echo -e "  -l                Filter the displayed type name (default all)"
+  echo -e "  -h,--help         help message."
+  echo -e "  -v,--version      show ems version."
   echo ""
-  echo "Remote command, last add command:"
-  echo "  $ ems devops pwd"
-  echo "  $ ems demo ls -l"
+  echo -e "Login system example:"
+  echo -e "  $ ems devops"
+  echo -e "  $ ems demo"
+  echo ""
+  echo -e "Remote command, last add command:"
+  echo -e "  $ ems devops pwd"
+  echo -e "  $ ems demo ls -l"
   echo ""
 }
 
 HostList(){
+  local i
   echo ""
   echo "Server Info:"
   echo ""
@@ -48,20 +55,70 @@ HostList(){
   echo ""
 }
 
-Remotelogin(){
+InitKey() {
+  read -r -p "Are you sure to initialize ems ? [y/n]: " initemsyn
+  if [[ $initemsyn =~ ^([yY][eE][sS]|[yY])$ ]]; then
+    test -d $ems_keydir || mkdir -p $ems_keydir
+    if [ ! -z $ems_keydir ];then
+      ssh-keygen -t rsa -b 4096 -q -f $ems_keydir/ems -P ''
+    fi
+    if [[ $? -eq "0" ]]; then
+      echo ""
+      echo "Initialize info:"
+      echo ""
+      echo "Private key: $ems_keydir/ems"
+      echo "Public key:  $ems_keydir/ems.pub"
+      echo ""
+    fi
+  elif [[ $initemsyn =~ ^([nN][oO]|[nN])$ ]]; then
+    echo "Initialize exit."
+    echo ""
+  else
+    echo "ems warn: need input yes or no."
+    InitKey
+  fi
+}
+
+HostInfo() {
+  # active , ip
+  local hostopt
+  if [[ $# -gt 0 ]]; then
+    for hostopt in $@
+    do
+      case $hostopt in
+        add)
+          shift
+
+          ;;
+        set)
+          shift
+
+          ;;
+      esac
+    done
+  fi
+}
+
+DomainInfo() {
+  echo "not work"
+}
+
+RemoteLogin(){
+  local i
   shift
   for (( i = 0; i <${#Server[@]}; i++ )); do
     if [[ $Host == ${Alias[i]} ]]; then
-      ssh -i $Key -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]}
+      ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]}
     fi
   done
 }
 
 Rcmd(){
+  local i
   shift
   for (( i = 0; i <${#Server[@]}; i++ )); do
     if [[ $Host == ${Alias[i]} ]]; then
-      ssh -i $Key -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]} "$@"
+      ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]} "$@"
     fi
   done
   exit 0
@@ -110,6 +167,53 @@ if [[ $# -gt 0 ]]; then
   for opt in $@
   do
     case $opt in
+      init)
+        shift
+
+        for initopt in $@; 
+        do
+          case $initopt in
+            ems)
+              shift
+              InitKey
+              ;;
+            host)
+              shift
+              hostip=($@)
+              shift
+              for (( i = 0; i < ${#hostip[@]}; i++ )); do
+                cp ${ems_keydir}/${ems_keyname}.pub ${ems_keydir}/authorized_keys
+                rsync --chmod=u+r,g-rwx,o-rwx -e "ssh -i ${ems_keydir}/${ems_keyname}" $ems_keydir/authorized_keys ${ems_USER}@${hostip[i]}:~/.ssh/
+              done
+              exit 0
+              ;;
+          esac
+        done
+        ;;
+      add)
+        shift
+        if [ $1 ]; then
+          add_opt=$1
+        else
+          echo "ems warn: There must be parameter."
+          exit 1
+        fi
+
+        case $add_opt in
+          --host=*)
+            shift
+            target_host="${opt#*=}"
+            HostInfo add target_host
+            ;;
+          --domain=*)
+            shift
+            DomainInfo="${opt#*=}"
+            ;;
+        esac
+        ;;
+        set)
+          shift
+        ;;
       -l)
         shift
         if [ $1 ]; then
@@ -125,11 +229,11 @@ if [[ $# -gt 0 ]]; then
       *)
         Host=$1
         shift
-        if [ $@ ]; then
+        if [ "$1" ]; then
           Cmd=$@
           Rcmd $Host $Cmd
         else
-          Remotelogin $Host
+          RemoteLogin $Host
         fi
         ;;
     esac

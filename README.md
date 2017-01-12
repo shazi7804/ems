@@ -1,7 +1,13 @@
 # ems
  The ems (Easy Manage Server) is conducive to the management system and security considerations of system, using bash development
 
-## Document
+## HowTo Install
+```
+$ ./chmod +x setup.sh
+$ ./setup.sh --prefix=/opt/ems
+```
+
+## HowTo add target
 
 ### ems commad
 ```
@@ -25,8 +31,3 @@ vi /etc/ems/site-conf.d/mysite.conf
 - Port		The remote port.
 - IP		Tje remote ip or domain.
 
-## Install
-```
-$ chmod +x setup.sh
-$ setup.sh
-```
