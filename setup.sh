@@ -9,31 +9,32 @@ ems_prefix="/opt/ems"
 ems_USER="root"
 
 Welcome() {
-	echo ""
-	echo " =============================================="
-	echo " == Welcome to use the ems installation tool =="
-	echo " =============================================="
-	echo "This tool will be installed in accordance with the following environment:"
-	echo ""
+  echo ""
+  echo " =============================================="
+  echo " == Welcome to use the ems installation tool =="
+  echo " =============================================="
+  echo "This tool will be installed in accordance with the following environment:"
+  echo ""
   echo "OS           = $OSVer"
-	echo "version      = $ems_ver"
-	echo "prefix       = $ems_prefix"
+  echo "version      = $ems_ver"
+  echo "prefix       = $ems_prefix"
   echo "config       = $ems_confdir"
-	echo "sbin         = $ems_sbin"
+  echo "sbin         = $ems_sbin"
   echo "user         = $ems_USER"
-	echo ""
-	read -n1 -r -p "ems is ready to be installed, press any key to continue..."
-	echo ""
+  echo ""
+  read -n1 -r -p "ems is ready to be installed, press any key to continue..."
+  echo ""
 }
 
 helpmsg() {
-	echo ""
-	echo "Usage: $0 [option]"
+  echo ""
+  echo "Usage: $0 [option]"
   echo ""
   echo "option:"
   echo "  --prefix=PATH     set installation prefix."
   echo "                    (default: $ems_prefix)"
-	echo ""
+  echo "  --user=USER       set default user for login."
+  echo ""
 }
 
 OSType() {
@@ -52,57 +53,57 @@ OSType() {
 }
 
 WorkingStatus() {
-	local rest green red status message
-	rest='\033[0m'
-	green='\033[033;32m'
-	red='\033[033;31m'
-	
-	status=$1
-	shift
-	message=$@
+  local rest green red status message
+  rest='\033[0m'
+  green='\033[033;32m'
+  red='\033[033;31m'
 
-	if [[ "OK" == $status ]]; then
-		echo -ne "$message  [${green}OK${rest}]\r"
-		echo -ne "\n"
-	elif [[ "Fail" == $status ]]; then
-		echo -ne "$message  [${green}Fail${rest}]"
-		exit 1
-	elif [[ "Process" == $status ]]; then
-		echo -ne "$message  [..]\r"
-	fi
+  status=$1
+  shift
+  message=$@
+
+  if [[ "OK" == $status ]]; then
+    echo -ne "$message  [${green}OK${rest}]\r"
+    echo -ne "\n"
+  elif [[ "Fail" == $status ]]; then
+    echo -ne "$message  [${green}Fail${rest}]"
+    exit 1
+  elif [[ "Process" == $status ]]; then
+    echo -ne "$message  [..]\r"
+  fi
 }
 
 
 ems_setup(){
-	WorkingStatus Process "Install ems"
-	if [ -n $ems_prefix ] && [ -n $ems_ver ]; then
-		if [ ! -d $ems_prefix-$ems_ver ]; then
-			mkdir -p $ems_prefix-$ems_ver
-		fi
-		cp -R config sbin $ems_prefix-$ems_ver/
-	fi
+  WorkingStatus Process "Install ems"
+  if [ -n $ems_prefix ] && [ -n $ems_ver ]; then
+    if [ ! -d $ems_prefix-$ems_ver ]; then
+      mkdir -p $ems_prefix-$ems_ver
+    fi
+    cp -R config sbin $ems_prefix-$ems_ver/
+  fi
 
-	if [ -L $ems_prefix ]; then
-		unlink $ems_prefix
-	fi
+  if [ -L $ems_prefix ]; then
+    unlink $ems_prefix
+  fi
 
-	# create softlink
-	ln -fs $ems_prefix-$ems_ver $ems_prefix
-	if [[ $? -ne 0 ]]; then
-		WorkingStatus Fail "Install ems"	
-	fi
+  # create softlink
+  ln -fs $ems_prefix-$ems_ver $ems_prefix
+  if [[ $? -ne 0 ]]; then
+    WorkingStatus Fail "Install ems"	
+  fi
 
   ln -fs $ems_prefix/sbin/ems /usr/bin/ems
-	chmod 555 $ems_prefix/sbin/ems
-	if [[ $? -ne 0 ]]; then
-		WorkingStatus Fail "Install ems"
-	else
-		WorkingStatus OK "Install ems"
-	fi
+  chmod 555 $ems_prefix/sbin/ems
+  if [[ $? -ne 0 ]]; then
+    WorkingStatus Fail "Install ems"
+  else
+    WorkingStatus OK "Install ems"
+  fi
 
   WorkingStatus Process "Write to ems.conf"
   if [ -f $ems_config ]; then
-  	echo "
+    echo "
 # ems configure path
 ems_ver="$ems_ver"
 ems_prefix="$ems_prefix"
@@ -117,26 +118,26 @@ ems_USER="$ems_USER"
 
 # OS Version
 OSType="$OSVer"
-  	" >> $ems_config
-  	WorkingStatus OK "Write to ems.conf"
+    " >> $ems_config
+    WorkingStatus OK "Write to ems.conf"
   else
-  	WorkingStatus Fail "Write to ems.conf"
+    WorkingStatus Fail "Write to ems.conf"
   fi
 
   WorkingStatus Process "Write to ems path"
   # add config next line
   if [[ 'MacOS' == $OSVer ]]; then
-    sed -i '' "/ems config path/a\ 
-    ems_config\=$ems_config\
-    " $ems_sbin/ems
+    sed -i '' "/ems config path/a \\ 
+    ems_config\=$ems_config \\
+    " $ems_sbin/ems $ems_sbin/ems-config
   elif [[ 'CentOS' == $OSVer ]] || [[ 'Ubuntu' == $OSVer ]]; then
-    sed -i "/ems config path/aems_config\=$ems_config" $ems_sbin/ems
+    sed -i "/ems config path/aems_config\=$ems_config" $ems_sbin/ems $ems_sbin/ems-config
   fi
   
   if [[ $? -ne 0 ]]; then
-  	WorkingStatus Fail "Write to ems path"
+    WorkingStatus Fail "Write to ems path"
   else
-  	WorkingStatus OK "Write to ems path"
+    WorkingStatus OK "Write to ems path"
   fi
 
   # initialize rsa key
@@ -188,7 +189,3 @@ echo "Installation successful !! You can enjoy the ems."
 echo ""
 echo "HowTo use ems: https://github.com/shazi7804/ems"
 echo ""
-
-
-
-

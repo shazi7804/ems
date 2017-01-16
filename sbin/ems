@@ -16,7 +16,8 @@ helpmsg(){
   echo -e "Usage: $0 [option|host] [command]"
   echo ""
   echo -e "[option]"
-  echo -e "  init ${BaseLine}ems,host${Reset}     The initialization ssh key."
+  echo -e "  init              The initialization ssh key."
+  echo -e "  add ${BaseLine}host${Reset}      Add new Server."
   echo ""
   echo -e "  -l                Filter the displayed type name (default all)"
   echo -e "  -h,--help         help message."
@@ -30,6 +31,25 @@ helpmsg(){
   echo -e "  $ ems devops pwd"
   echo -e "  $ ems demo ls -l"
   echo ""
+}
+
+LogFormat(){
+  local rest green red status message
+  rest='\033[0m'
+  green='\033[033;32m'
+  red='\033[033;31m'
+
+  status=$1
+  shift
+  message=$@
+  if [[ "info" == $status ]]; then
+    echo -e "[ems][$status]: ${message}"
+  elif [[ "warn" == $status ]]; then
+    echo -e "[ems][$status]: ${message}"
+  elif [[ "error" == $status ]]; then
+    echo -e "${red}[ems][$status]: ${message}${rest}"
+    exit 1
+  fi
 }
 
 HostList(){
@@ -56,7 +76,7 @@ HostList(){
 }
 
 InitKey() {
-  read -r -p "Are you sure to initialize ems ? [y/n]: " initemsyn
+  read -r -p "Are you sure to initialize ems key ? [y/n]: " initemsyn
   if [[ $initemsyn =~ ^([yY][eE][sS]|[yY])$ ]]; then
     test -d $ems_keydir || mkdir -p $ems_keydir
     if [ ! -z $ems_keydir ];then
@@ -71,39 +91,14 @@ InitKey() {
       echo ""
     fi
   elif [[ $initemsyn =~ ^([nN][oO]|[nN])$ ]]; then
-    echo "Initialize exit."
-    echo ""
+    LogFormat info Initialize exit.
   else
-    echo "ems warn: need input yes or no."
+    LogFormat warn need input yes or no.
     InitKey
   fi
 }
 
-HostInfo() {
-  # active , ip
-  local hostopt
-  if [[ $# -gt 0 ]]; then
-    for hostopt in $@
-    do
-      case $hostopt in
-        add)
-          shift
-
-          ;;
-        set)
-          shift
-
-          ;;
-      esac
-    done
-  fi
-}
-
-DomainInfo() {
-  echo "not work"
-}
-
-RemoteLogin(){
+RLogin(){
   local i
   shift
   for (( i = 0; i <${#Server[@]}; i++ )); do
@@ -113,7 +108,7 @@ RemoteLogin(){
   done
 }
 
-Rcmd(){
+RCmd(){
   local i
   shift
   for (( i = 0; i <${#Server[@]}; i++ )); do
@@ -147,21 +142,19 @@ esac
 if [ -e $ems_config ]; then
   source $ems_config
 else
-  echo "ems error: ems config not found."
+  LogFormat error ems config not found.
 fi
-
 
 if ls $ems_sitelist &>/dev/null; then
   if [[ "testing" == $config_opt ]]; then
-    echo "ems notice: configuration file $ems_config test is successful."
+    LogFormat info configuration file $ems_config test is successful.
     echo ""
   else
     for q in $ems_sitelist/*.conf; do source $q; done
   fi
 else
-  echo "ems warn: The site list data not found."
+  LogFormat warn The site list data not found.
 fi
-
 
 if [[ $# -gt 0 ]]; then
   for opt in $@
@@ -169,50 +162,56 @@ if [[ $# -gt 0 ]]; then
     case $opt in
       init)
         shift
-
-        for initopt in $@; 
-        do
-          case $initopt in
-            ems)
-              shift
-              InitKey
-              ;;
-            host)
-              shift
-              hostip=($@)
-              shift
-              for (( i = 0; i < ${#hostip[@]}; i++ )); do
-                cp ${ems_keydir}/${ems_keyname}.pub ${ems_keydir}/authorized_keys
-                rsync --chmod=u+r,g-rwx,o-rwx -e "ssh -i ${ems_keydir}/${ems_keyname}" $ems_keydir/authorized_keys ${ems_USER}@${hostip[i]}:~/.ssh/
-              done
-              exit 0
-              ;;
-          esac
-        done
+        InitKey
         ;;
       add)
         shift
-        if [ $1 ]; then
-          add_opt=$1
-        else
-          echo "ems warn: There must be parameter."
-          exit 1
-        fi
+        if [ $# -gt 0 ]; then
+          for initopt in $@; 
+          do
+            case $initopt in
+              host)
+                shift
+                hostip=($@)
+                shift
+                for (( i = 0; i < ${#hostip[@]}; i++ )); do
+                  LogFormat info Initialize: ${hostip[i]} ..
+                  cp ${ems_keydir}/${ems_keyname}.pub ${ems_keydir}/authorized_keys
 
-        case $add_opt in
-          --host=*)
-            shift
-            target_host="${opt#*=}"
-            HostInfo add target_host
-            ;;
-          --domain=*)
-            shift
-            DomainInfo="${opt#*=}"
-            ;;
-        esac
-        ;;
-        set)
-          shift
+                  LogFormat info sync public key ..
+                  rsync --chmod=u+r,g-rwx,o-rwx -e "ssh -i ${ems_keydir}/${ems_keyname}" $ems_keydir/authorized_keys ${ems_USER}@${hostip[i]}:~/.ssh/
+                  
+                  LogFormat info get ${hostip[i]} information ..
+                  ServerName=`ssh -i ${ems_keydir}/${ems_keyname} ${ems_USER}@${hostip[i]} hostname`
+                  ServerUser=${ems_USER}
+                  ServerIP=${hostip[i]}
+
+                  read -r -p "setting Server alias: " ServerAlias
+                  read -r -p "check Server Type: " ServerType
+
+                  echo "
+Type+=(${ServerType})
+Alias+=(${ServerAlias})
+Server+=(${ServerName})
+Port+=(22)
+User+=(${ServerUser})
+IP+=(${ServerIP})
+                  " >> $ems_sitelist/${ServerType}.conf
+
+                  if [[ $? -eq "0" ]]; then
+                    LogFormat info Initialize ${hostip[i]} finish.
+                  else
+                    LogFormat error Initialize ${hostip[i]} fail.
+                    exit 1
+                  fi
+                done
+                exit 0
+                ;;
+            esac
+          done  
+        else
+          LogFormat warn The \"init\" parameter must have a value.
+        fi
         ;;
       -l)
         shift
@@ -220,7 +219,7 @@ if [[ $# -gt 0 ]]; then
           Listfilter=$1
           HostList $Listfilter
         else
-          echo "ems warn: You must select a type name !!"
+          LogFormat warn You must select a type name !!
           echo ""
           echo "${Type[@]}" | tr ' ' '\n' | sort -u
           echo ""
@@ -231,9 +230,9 @@ if [[ $# -gt 0 ]]; then
         shift
         if [ "$1" ]; then
           Cmd=$@
-          Rcmd $Host $Cmd
+          RCmd $Host $Cmd
         else
-          RemoteLogin $Host
+          RLogin $Host
         fi
         ;;
     esac
@@ -241,6 +240,7 @@ if [[ $# -gt 0 ]]; then
 else
   HostList
 fi
+
 
 
 
