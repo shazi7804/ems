@@ -46,6 +46,8 @@ OSType() {
     OSVer="CentOS"
   elif lsb_release -d | grep Ubuntu &> /dev/null; then
     OSVer="Ubuntu"
+  elif lsb_release -d | grep Debian &> /dev/null; then
+    OSVer="Debian"
   else
     echo "unsupported OS type, please contact https://github.com/shazi7804"
     exit 1
@@ -130,7 +132,7 @@ OSType="$OSVer"
     sed -i '' "/ems config path/a \\ 
     ems_config\=$ems_config \\
     " $ems_sbin/ems $ems_sbin/ems-config
-  elif [[ $OSVer =~ ^(Ubuntu|CentOS|Cygwin)$ ]]; then
+  elif [[ $OSVer =~ ^(Ubuntu|Debian|CentOS|Cygwin)$ ]]; then
     sed -i "/ems config path/aems_config\=$ems_config" $ems_sbin/ems $ems_sbin/ems-config
   fi
   

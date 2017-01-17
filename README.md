@@ -1,15 +1,30 @@
-# ems
+# What is this?
  The ems (Easy Manage Server) is conducive to the management system and security considerations of system, using bash development
+
+## Support & Requirements
+- OS: CentOS, Ubuntu, Debian, Cygwin, MacOS
+- ssh, ssh-keygen
+- rsync
+
 
 ## HowTo Install
 ```
 $ ./chmod +x setup.sh
 $ ./setup.sh --prefix=/opt/ems
 ```
+If you need setting default login user:
+```
+$ ./setup.sh --user=scott
+```
 
-## HowTo add target
+## HowTo add host
+```
+ems add host [IP1,IP2 ...]
+```
 
-### ems commad
+
+### ems command
+
 ```
 You can login quickly
 $ ems mysite
@@ -24,10 +39,9 @@ Add you site setting
 vi /etc/ems/site-conf.d/mysite.conf
 ```
 
-- Type      You can sort site types. 
-- Alias     Set your site alias login.
-- Server	Display hostname for identification.
-- User		The remote user name.
-- Port		The remote port.
-- IP		Tje remote ip or domain.
-
+- Type     You can sort site types. 
+- Alias    Set your site alias login.
+- Server   Display hostname for identification.
+- User     The remote user name.
+- Port     The remote port.
+- IP       The remote ip or domain.

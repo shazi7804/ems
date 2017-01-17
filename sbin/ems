@@ -17,7 +17,7 @@ helpmsg(){
   echo ""
   echo -e "[option]"
   echo -e "  init              The initialization ssh key."
-  echo -e "  add ${BaseLine}host${Reset}      Add new Server."
+  echo -e "  add ${BaseLine}host${Reset}          Add new Server."
   echo ""
   echo -e "  -l                Filter the displayed type name (default all)"
   echo -e "  -h,--help         help message."
