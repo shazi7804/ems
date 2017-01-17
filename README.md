@@ -3,7 +3,7 @@
 
 ## Support & Requirements
 - OS: CentOS, Ubuntu, Debian, Cygwin, MacOS
-- ssh, ssh-keygen
+- openssh-client
 - rsync
 
 

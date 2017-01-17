@@ -1,4 +1,4 @@
-# setup ems
+#!/bin/bash
 #
 # Program: ems setup
 # Author: shazi
@@ -38,7 +38,7 @@ helpmsg() {
 }
 
 OSType() {
-  if uname | grep MINGW64 &> /dev/null; then
+  if uname | grep CYGWIN &> /dev/null; then
     OSVer="Cygwin"
   elif sw_vers &> /dev/null; then
     OSVer="MacOS"
