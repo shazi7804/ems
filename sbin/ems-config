@@ -1,0 +1,83 @@
+#!/bin/bash
+#
+# Program: ems config tools
+# Author: shazi
+# Github: https://github.com/shazi7804
+
+# ems config path, not deleting rows
+
+
+helpmsg(){
+  echo ""
+  echo -e "Usage: $0 [option|host] [command]"
+  echo ""
+  echo -e "[option]"
+  echo ""
+  echo ""
+}
+
+LogFormat(){
+  local rest green red status message
+  rest='\033[0m'
+  green='\033[033;32m'
+  red='\033[033;31m'
+
+  status=$1
+  shift
+  message=$@
+  if [[ "info" == $status ]]; then
+    echo -e "[ems][$status]: ${message}"
+    exit 0
+  elif [[ "warn" == $status ]]; then
+    echo -e "[ems][$status]: ${message}"
+  elif [[ "error" == $status ]]; then
+    echo -e "${red}[ems][$status]: ${message}${rest}"
+    exit 1
+  fi
+}
+
+HostList(){
+  local i
+  echo ""
+  echo "Server Info:"
+  echo ""
+  printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'Alias' 'HostName' 'IP'
+  printf "%s\n" "-----------------------------------------------"
+  if [ $1 ]; then
+    filter=$1
+    shift
+    for (( i = 0; i < ${#Alias[@]}; i++ )); do
+      if [[ $filter == ${Type[i]} ]]; then
+        printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
+      fi
+    done
+  else
+    for (( i = 0; i < ${#Alias[@]}; i++ )); do
+      printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n"  ${Alias[i]} ${Server[i]} ${IP[i]}
+    done
+  fi
+  echo ""
+}
+
+
+if [ -f $ems_config]; then
+  source $ems_config
+fi
+
+if [[ $# -gt 0 ]]; then
+  for opt in $@
+  do
+    case $opt in
+      print)
+        if [ -d $ems_sitelist ] && [ -f $ems_sitelist/*.conf ]; then
+          for q in $ems_sitelist/*.conf; do source $q; done
+          HostList
+        else
+          LogFormat warn can not read site config.
+        fi
+        ;;
+      set)
+        ;;
+    esac
+  done
+fi
