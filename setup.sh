@@ -49,7 +49,7 @@ OSType() {
   elif lsb_release -d | grep Debian &> /dev/null; then
     OSVer="Debian"
   else
-    echo "unsupported OS type, please contact https://github.com/shazi7804"
+    echo "unsupported OS type,  https://github.com/shazi7804"
     exit 1
   fi
 }
@@ -79,7 +79,10 @@ WorkingStatus() {
 ems_setup(){
   WorkingStatus Process "Install ems"
   if [ -n $ems_prefix ] && [ -n $ems_ver ]; then
-    if [ ! -d $ems_prefix-$ems_ver ]; then
+    if [ -d $ems_prefix-$ems_ver ] || [ -d $ems_prefix ]; then
+      echo "Directory already exists, ems has been installed?"
+      exit 1
+    else
       mkdir -p $ems_prefix-$ems_ver
     fi
     cp -R config sbin $ems_prefix-$ems_ver/
@@ -92,11 +95,15 @@ ems_setup(){
   # create softlink
   ln -fs $ems_prefix-$ems_ver $ems_prefix
   if [[ $? -ne 0 ]]; then
-    WorkingStatus Fail "Install ems"	
+    WorkingStatus Fail "Install ems"
   fi
 
-  ln -fs $ems_prefix/sbin/ems /usr/bin/ems
-  chmod 555 $ems_prefix/sbin/ems
+  if [[ "MacOS" == $OSVer ]]; then
+    sudo ln -fs $ems_prefix/sbin/ems /usr/bin/ems
+  else
+    ln -fs $ems_prefix/sbin/ems /usr/bin/ems
+  fi
+  chmod 755 $ems_prefix/sbin/ems
   if [[ $? -ne 0 ]]; then
     WorkingStatus Fail "Install ems"
   else
