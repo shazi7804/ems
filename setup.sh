@@ -5,7 +5,7 @@
 # Github: https://github.com/shazi7804
 
 ems_ver="1.0"
-ems_prefix="/opt/ems"
+ems_prefix="/usr/local/ems"
 ems_USER="root"
 
 Welcome() {
@@ -77,33 +77,33 @@ WorkingStatus() {
 
 
 ems_setup(){
-  WorkingStatus Process "Install ems"
-  if [ -n $ems_prefix ] && [ -n $ems_ver ]; then
-    if [ -d $ems_prefix-$ems_ver ] || [ -d $ems_prefix ]; then
-      echo "Directory already exists, ems has been installed?"
-      exit 1
-    else
-      mkdir -p $ems_prefix-$ems_ver
-    fi
-    cp -R config sbin $ems_prefix-$ems_ver/
+  if [[ "MacOS" == $OSVer ]]; then
+    owner="sudo -u $USER"
   fi
+
+  if [ -d $ems_prefix ]; then
+    echo "Directory already exists, ems has been installed?"
+    exit 1
+  else
+    if [[ "MacOS" == $OSVer ]]; then
+      echo "OS type is $OSVer .. need permissions."
+      sudo echo ""
+      sudo install -d -o $USER -m 755 $ems_prefix
+    else
+      mkdir -p $ems_prefix
+    fi
+  fi
+
+  WorkingStatus Process "Install ems"
+  cp -R config sbin resources $ems_prefix
 
   if [ -L $ems_prefix ]; then
     unlink $ems_prefix
   fi
 
-  # create softlink
-  ln -fs $ems_prefix-$ems_ver $ems_prefix
-  if [[ $? -ne 0 ]]; then
-    WorkingStatus Fail "Install ems"
-  fi
-
-  if [[ "MacOS" == $OSVer ]]; then
-    sudo ln -fs $ems_prefix/sbin/ems /usr/bin/ems
-  else
-    ln -fs $ems_prefix/sbin/ems /usr/bin/ems
-  fi
-  chmod 755 $ems_prefix/sbin/ems
+  $owner ln -fs $ems_prefix/sbin/ems* /usr/local/bin/
+  
+  $owner chmod 755 $ems_prefix/sbin/ems
   if [[ $? -ne 0 ]]; then
     WorkingStatus Fail "Install ems"
   else
@@ -121,6 +121,7 @@ ems_config="$ems_config"
 ems_sbin="$ems_sbin"
 ems_keydir="$ems_keydir"
 ems_sitelist="$ems_sitelist"
+ems_resources="$ems_resources"
 
 # Default login user
 ems_USER="$ems_USER"
@@ -188,6 +189,7 @@ ems_config="${ems_confdir}/ems.conf"
 ems_sbin="${ems_prefix}/sbin"
 ems_keydir="${ems_prefix}/key"
 ems_sitelist="${ems_confdir}/site-conf.d"
+ems_resources="${ems_prefix}/resources"
 
 OSType
 Welcome

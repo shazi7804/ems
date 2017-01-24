@@ -19,7 +19,7 @@ $ ./setup.sh --user=scott
 
 ## HowTo add host
 ```
-ems add host [IP1,IP2 ...]
+ems init [IP1,IP2 ...]
 ```
 
 
@@ -31,6 +31,9 @@ $ ems mysite
 
 You can also execute commands directly
 $ ems mysite ls -l
+
+Use sudo permissions command
+$ ems mysite sudo ls -l
 ```
 
 ### Site List setting
@@ -39,9 +42,9 @@ Add you site setting
 vi /etc/ems/site-conf.d/mysite.conf
 ```
 
-- Type     You can sort site types. 
-- Alias    Set your site alias login.
-- Server   Display hostname for identification.
-- User     The remote user name.
-- Port     The remote port.
-- IP       The remote ip or domain.
+- Type - You can sort site types. 
+- Alias - Set your site alias login.
+- Server - Display hostname for identification.
+- User - The remote user name.
+- Port - The remote port.
+- IP - The remote ip or domain.

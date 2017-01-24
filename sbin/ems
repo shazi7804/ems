@@ -16,8 +16,8 @@ helpmsg(){
   echo -e "Usage: $0 [option|host] [command]"
   echo ""
   echo -e "[option]"
-  echo -e "  init                       The initialization ssh key."
-  echo -e "  add [${BaseLine}host|domain${Reset}]          Add new Server/Domain setting."
+  echo -e "  init ${BaseLine}host${Reset}                  The initialization server setting."
+  echo -e "  reset                      Reset ems key."
   echo ""
   echo -e "  -l                         Filter the displayed type name (default all)"
   echo -e "  -h,--help                  help message."
@@ -34,8 +34,8 @@ helpmsg(){
 }
 
 LogFormat(){
-  local rest green red status message
-  rest='\033[0m'
+  local reset green red status message
+  reset='\033[0m'
   green='\033[033;32m'
   red='\033[033;31m'
 
@@ -43,7 +43,7 @@ LogFormat(){
   shift
   message=$@
   if [[ "info" == $status ]]; then
-    echo -e "[ems][$status]: ${message}"
+    echo -e "${green}[ems][$status]: ${message}${reset}"
   elif [[ "warn" == $status ]]; then
     echo -e "[ems][$status]: ${message}"
   elif [[ "error" == $status ]]; then
@@ -53,29 +53,29 @@ LogFormat(){
 }
 
 HostList(){
-  local i
+  local i j
   echo ""
   echo "Server Info:"
   echo ""
-  printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'Alias' 'HostName' 'IP'
-  printf "%s\n" "-----------------------------------------------"
+  printf "  %-3s  %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'id' 'Alias' 'HostName' 'IP'
+  printf "%s\n" "--------------------------------------------------"
   if [ $1 ]; then
     filter=$1
     shift
     for (( i = 0; i < ${#Alias[@]}; i++ )); do
       if [[ $filter == ${Type[i]} ]]; then
-        printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
+        printf "  %-3s  %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" $[i] ${Alias[i]} ${Server[i]} ${IP[i]}
       fi
     done
   else
     for (( i = 0; i < ${#Alias[@]}; i++ )); do
-      printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n"  ${Alias[i]} ${Server[i]} ${IP[i]}
+      printf "  %-3s  %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" $[i] ${Alias[i]} ${Server[i]} ${IP[i]}
     done
   fi
   echo ""
 }
 
-InitKey() {
+Reset() {
   read -r -p "Are you sure to initialize ems key ? [y/n]: " initemsyn
   if [[ $initemsyn =~ ^([yY][eE][sS]|[yY])$ ]]; then
     test -d $ems_keydir || mkdir -p $ems_keydir
@@ -94,7 +94,61 @@ InitKey() {
     LogFormat info Initialize exit.
   else
     LogFormat warn need input yes or no.
-    InitKey
+    Reset key
+  fi
+}
+
+Init() {
+  for initopt in $@
+  do
+    case $initopt in
+      -root)
+        Remote_User=root
+        shift
+        ;;
+    esac
+  done
+
+  if [ $# -gt 0 ]; then  
+    if [[ -z $Remote_User ]]; then
+      Remote_User=$ems_USER
+    fi
+
+    hostip=($@)
+    shift
+    for (( i = 0; i < ${#hostip[@]}; i++ )); do
+      pub_key=$(cat ${ems_keydir}/${ems_keyname}.pub)
+      
+      LogFormat info Initialize: ${hostip[i]} ...
+      ssh $Remote_User@${hostip[i]} bash -s < $ems_resources/init-server.sh "$ems_USER" "$pub_key"
+
+      LogFormat info get ${hostip[i]} information ...
+      ServerName=$(ssh -i ${ems_keydir}/${ems_keyname} ${ems_USER}@${hostip[i]} hostname)
+      ServerUser=${ems_USER}
+      ServerIP=${hostip[i]}
+
+      read -r -p "Setting Alias: " ServerAlias
+      read -r -p "Setting Type: " ServerType
+
+      echo "
+Type+=(${ServerType})
+Alias+=(${ServerAlias})
+Server+=(${ServerName})
+Port+=(22)
+User+=(${ServerUser})
+IP+=(${ServerIP})
+      " >> $ems_sitelist/${ServerType}.conf
+
+      if [[ $? -eq "0" ]]; then
+        LogFormat info Initialize ${hostip[i]} finish.
+      else
+        LogFormat error Initialize ${hostip[i]} fail.
+        exit 1
+      fi
+
+    done
+  else
+    LogFormat warn The \"init\" parameter must have a value.
   fi
 }
 
@@ -162,56 +216,11 @@ if [[ $# -gt 0 ]]; then
     case $opt in
       init)
         shift
-        InitKey
+        Init $@
         ;;
-      add)
+      reset)
         shift
-        if [ $# -gt 0 ]; then
-          for initopt in $@; 
-          do
-            case $initopt in
-              host)
-                shift
-                hostip=($@)
-                shift
-                for (( i = 0; i < ${#hostip[@]}; i++ )); do
-                  LogFormat info Initialize: ${hostip[i]} ..
-                  cp ${ems_keydir}/${ems_keyname}.pub ${ems_keydir}/authorized_keys
-
-                  LogFormat info sync public key ..
-                  rsync --chmod=u+r,g-rwx,o-rwx -e "ssh -i ${ems_keydir}/${ems_keyname}" $ems_keydir/authorized_keys ${ems_USER}@${hostip[i]}:~/.ssh/
-                  
-                  LogFormat info get ${hostip[i]} information ..
-                  ServerName=`ssh -i ${ems_keydir}/${ems_keyname} ${ems_USER}@${hostip[i]} hostname`
-                  ServerUser=${ems_USER}
-                  ServerIP=${hostip[i]}
-
-                  read -r -p "setting Server alias: " ServerAlias
-                  read -r -p "check Server Type: " ServerType
-
-                  echo "
-Type+=(${ServerType})
-Alias+=(${ServerAlias})
-Server+=(${ServerName})
-Port+=(22)
-User+=(${ServerUser})
-IP+=(${ServerIP})
-                  " >> $ems_sitelist/${ServerType}.conf
-
-                  if [[ $? -eq "0" ]]; then
-                    LogFormat info Initialize ${hostip[i]} finish.
-                  else
-                    LogFormat error Initialize ${hostip[i]} fail.
-                    exit 1
-                  fi
-                done
-                exit 0
-                ;;
-            esac
-          done  
-        else
-          LogFormat warn The \"init\" parameter must have a value.
-        fi
+        Reset
         ;;
       -l)
         shift
