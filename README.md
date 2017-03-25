@@ -4,18 +4,12 @@
 ## Support & Requirements
 - OS: CentOS, Ubuntu, Debian, Cygwin, MacOS
 - openssh-client
-- rsync
-- expect
 
 
 ## HowTo Install
 ```
 $ ./chmod +x setup.sh
-$ ./setup.sh --prefix=/opt/ems
-```
-If you need setting default login user:
-```
-$ ./setup.sh --user=scott
+$ ./setup.sh --user=shazi7804
 ```
 
 ## HowTo add host
@@ -23,19 +17,27 @@ $ ./setup.sh --user=scott
 ems init [IP1,IP2 ...]
 ```
 
-
 ### ems command
-
-```
 You can login quickly
-$ ems mysite
+```
+$ ems go mysite
+```
 
 You can also execute commands directly
-$ ems mysite ls -l
+```
+$ ems go mysite ifconfig
+```
 
 Use sudo permissions command
-$ ems mysite sudo ls -l
 ```
+$ ems go mysite sudo touch testfile
+```
+
+You can also use 'id' send command to site group
+```
+$ ems go --id 0,1 sudo touch testfile
+```
+
 
 ### Site List setting
 Add you site setting
@@ -43,9 +45,17 @@ Add you site setting
 vi /etc/ems/site-conf.d/mysite.conf
 ```
 
-- Type - You can sort site types. 
-- Alias - Set your site alias login.
-- Server - Display hostname for identification.
-- User - The remote user name.
-- Port - The remote port.
-- IP - The remote ip or domain.
+- Group
+You can sort site types. 
+
+- Alias
+Set your site alias login.
+
+- HostName
+Display hostname for identification.
+
+- Port
+The remote port.
+
+- IP
+The remote ip or domain.

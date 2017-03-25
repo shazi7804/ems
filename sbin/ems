@@ -1,38 +1,41 @@
 #!/bin/bash
 #
 # Program: The ems (Easy Manage Server) is conducive to the management system and security considerations of system, using bash development.
-# Version: 1.0
+# Version: 1.1
 # Author: shazi
 # Github: https://github.com/shazi7804
 
 # ems config path, not deleting rows
+ems_config=/usr/local/ems/config/ems.conf
 
 # text format
 BaseLine='\033[4m'
 Reset='\033[0m'
 
+
+# help message
 helpmsg(){
   echo ""
   echo -e "Usage: $0 [option|host] [command]"
   echo ""
   echo -e "[option]"
-  echo -e "  init ${BaseLine}host${Reset}                  The initialization server setting."
-  echo -e "  reset                      Reset ems key."
-  echo ""
   echo -e "  -l                         Filter the displayed type name (default all)"
   echo -e "  -h,--help                  help message."
   echo -e "  -v,--version               show ems version."
   echo ""
-  echo -e "Login system example:"
-  echo -e "  $ ems devops"
-  echo -e "  $ ems demo"
+  echo -e "Login:"
+  echo -e "  $ ems go devops"
+  echo -e "  $ ems go demo"
   echo ""
   echo -e "Remote command, last add command:"
-  echo -e "  $ ems devops pwd"
-  echo -e "  $ ems demo ls -l"
+  echo -e "  $ ems go devops ifconfig"
+  echo -e ""
+  echo -e "You can also use 'id'' send command to site group"
+  echo -e "  $ ems go -id 0,1 ifconfig"
   echo ""
 }
 
+# log format
 LogFormat(){
   local reset green red status message
   reset='\033[0m'
@@ -52,141 +55,106 @@ LogFormat(){
   fi
 }
 
+# list all hosts
 HostList(){
   local i j
+  ImportSite
   echo ""
-  echo "Server Info:"
-  echo ""
-  printf "  %-3s  %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'id' 'Alias' 'HostName' 'IP'
+  echo "--------------------------------------------------"
+  printf "  %-3s %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'id' 'Alias' 'HostName' 'IP'
   printf "%s\n" "--------------------------------------------------"
+
   if [ $1 ]; then
     filter=$1
     shift
     for (( i = 0; i < ${#Alias[@]}; i++ )); do
-      if [[ $filter == ${Type[i]} ]]; then
-        printf "  %-3s  %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" $[i] ${Alias[i]} ${Server[i]} ${IP[i]}
+      if [[ $filter == ${Group[i]} ]]; then
+        printf "  %-3s %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n"  ${id[i]} ${Alias[i]} ${HostName[i]} ${IP[i]}
       fi
     done
   else
     for (( i = 0; i < ${#Alias[@]}; i++ )); do
-      printf "  %-3s  %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" $[i] ${Alias[i]} ${Server[i]} ${IP[i]}
+      printf "  %-3s %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n"  ${id[i]} ${Alias[i]} ${HostName[i]} ${IP[i]}
     done
   fi
   echo ""
 }
 
-Reset() {
-  read -r -p "Are you sure to initialize ems key ? [y/n]: " initemsyn
-  if [[ $initemsyn =~ ^([yY][eE][sS]|[yY])$ ]]; then
-    test -d $ems_keydir || mkdir -p $ems_keydir
-    if [ ! -z $ems_keydir ];then
-      ssh-keygen -t rsa -b 4096 -q -f $ems_keydir/ems -P ''
-    fi
-    if [[ $? -eq "0" ]]; then
-      echo ""
-      echo "Initialize info:"
-      echo ""
-      echo "Private key: $ems_keydir/ems"
-      echo "Public key:  $ems_keydir/ems.pub"
-      echo ""
-    fi
-  elif [[ $initemsyn =~ ^([nN][oO]|[nN])$ ]]; then
-    LogFormat info Initialize exit.
-  else
-    LogFormat warn need input yes or no.
-    Reset key
-  fi
-}
-
-Init() {
-  for initopt in $@
-  do
-    case $initopt in
-      -root)
-        Remote_User=root
-        shift
-        ;;
-    esac
-  done
-
-  if [ $# -gt 0 ]; then  
-    if [[ -z $Remote_User ]]; then
-      Remote_User=$ems_USER
-    fi
-
-    hostip=($@)
-    shift
-    for (( i = 0; i < ${#hostip[@]}; i++ )); do
-      pub_key=$(cat ${ems_keydir}/${ems_keyname}.pub)
-      
-      LogFormat info Initialize: ${hostip[i]} ...
-      ssh $Remote_User@${hostip[i]} bash -s < $ems_resources/init-server.sh "$ems_USER" "$pub_key"
-
-      LogFormat info get ${hostip[i]} information ...
-      ServerName=$(ssh -i ${ems_keydir}/${ems_keyname} ${ems_USER}@${hostip[i]} hostname)
-      ServerUser=${ems_USER}
-      ServerIP=${hostip[i]}
-
-      read -r -p "Setting Alias: " ServerAlias
-      read -r -p "Setting Type: " ServerType
-
-      echo "
-Type+=(${ServerType})
-Alias+=(${ServerAlias})
-Server+=(${ServerName})
-Port+=(22)
-User+=(${ServerUser})
-IP+=(${ServerIP})
-      " >> $ems_sitelist/${ServerType}.conf
-
-      if [[ $? -eq "0" ]]; then
-        LogFormat info Initialize ${hostip[i]} finish.
-      else
-        LogFormat error Initialize ${hostip[i]} fail.
-        exit 1
-      fi
-
+ImportSite(){
+  # import all site
+  allsite=($(find $ems_sitelist -type f -name "*.conf"))
+  if find $ems_sitelist -type f -name "*.conf" &>/dev/null; then
+    for (( i = 0; i < ${#allsite[@]}; i++ )); do
+      source ${allsite[i]}
     done
   else
-    LogFormat warn The \"init\" parameter must have a value.
+    LogFormat warn The site list data not found.
+  fi
+
+  # Init site id
+  for (( i = 0; i < ${#Alias[@]}; i++ )); do
+    id+=($i)
+  done
+}
+
+# need $Host arguments.
+RemoteLogin(){
+  if [ $Host ]; then
+    for (( i = 0; i <${#HostName[@]}; i++ )); do
+      if [ $Host == ${Alias[i]} ]; then
+        if [ -n $ems_USER ]; then
+          ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[i]}
+        else
+          ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]}
+        fi
+      fi
+    done
+  else
+    echo "Remote site nees 'Host' arguments."
   fi
 }
 
-RLogin(){
-  local i
-  shift
-  for (( i = 0; i <${#Server[@]}; i++ )); do
-    if [[ $Host == ${Alias[i]} ]]; then
-      ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]}
-    fi
-  done
+# need $Host and $CMD arguments.
+Remotecmd(){
+  if [[ -n $Ids ]] && [[ -n $CMD ]]; then
+    for (( i = 0; i <${#Ids[@]}; i++ )); do
+      for (( j = 0; j <${#Alias[@]}; j++ )); do
+        if [[ ${Ids[i]} == $j ]]; then
+          if [ -n $ems_USER ]; then
+            ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[j]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[j]} "$CMD"
+          else
+            ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[j]} -o ConnectTimeout=$Time_Retry ${User[j]}@${IP[j]} "$CMD"
+          fi
+        fi
+      done
+    done
+  elif [[ -n $Host ]] && [[ -n $CMD ]]; then
+    for (( i = 0; i <${#HostName[@]}; i++ )); do
+      if [[ $Host == ${Alias[i]} ]]; then
+        if [ -n $ems_USER ]; then
+          ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[i]} "$CMD"
+        else
+          ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]} "$CMD"
+        fi
+      fi
+    done
+  fi
 }
 
-RCmd(){
-  local i
-  shift
-  for (( i = 0; i <${#Server[@]}; i++ )); do
-    if [[ $Host == ${Alias[i]} ]]; then
-      ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]} "$@"
-    fi
-  done
-  exit 0
-}
-
-# not include config function.
+# not include config arguments.
 case $@ in
   -h|--help)
     helpmsg
     exit 0
     ;;
   -v|--version)
-    echo "ems (Easy Manage Server) $ems_ver"
-    echo "Copyright (C) 2016-2017 The ems Author shazi"
+    echo "ems (Easy Manage Server)"
+    echo "Copyright (C) 2016-2017 The ems Author shazi7804"
     echo ""
     echo "This is free software."
     echo ""
-    echo "github: http://github.com/shazi7804"
-    echo "blog: http://shazi.info"
+    echo "github: https://github.com/shazi7804"
+    echo "blog: https://shazi.info"
     echo ""
     exit 0
     ;;
@@ -197,51 +165,52 @@ if [ -e $ems_config ]; then
   source $ems_config
 else
   LogFormat error ems config not found.
-fi
-
-if ls $ems_sitelist &>/dev/null; then
-  if [[ "testing" == $config_opt ]]; then
-    LogFormat info configuration file $ems_config test is successful.
-    echo ""
-  else
-    for q in $ems_sitelist/*.conf; do source $q; done
-  fi
-else
-  LogFormat warn The site list data not found.
+  exit 1
 fi
 
 if [[ $# -gt 0 ]]; then
   for opt in $@
   do
     case $opt in
-      init)
-        shift
-        Init $@
-        ;;
-      reset)
-        shift
-        Reset
-        ;;
-      -l)
+      -g)
         shift
         if [ $1 ]; then
           Listfilter=$1
           HostList $Listfilter
         else
           LogFormat warn You must select a type name !!
+          ImportSite
           echo ""
-          echo "${Type[@]}" | tr ' ' '\n' | sort -u
+          echo "${Group[@]}" | tr ' ' '\n' | sort -u
           echo ""
         fi
+        exit 0
         ;;
-      *)
-        Host=$1
+      go)
         shift
-        if [ "$1" ]; then
-          Cmd=$@
-          RCmd $Host $Cmd
-        else
-          RLogin $Host
+        if [[ $1 == '--id' ]]; then
+          shift
+          Ids_Data=($(echo $1 | sed 's/,/ /g'))
+          Ids=($(for l in ${Ids_Data[@]}; do echo $l; done | sort))
+          shift
+          if [ $1 ]; then
+            CMD=$@
+            ImportSite
+            Remotecmd
+          else
+            echo "'--id' need 'command' arguments."
+            exit 1
+          fi
+        else  
+          ImportSite
+          Host=$1
+          shift
+          if [ "$1" ]; then
+            CMD=$@
+            Remotecmd
+          else
+            RemoteLogin
+          fi
         fi
         ;;
     esac
