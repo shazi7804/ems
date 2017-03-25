@@ -12,7 +12,6 @@ ems_config=/usr/local/ems/config/ems.conf
 BaseLine='\033[4m'
 Reset='\033[0m'
 
-
 # help message
 helpmsg(){
   echo ""
@@ -30,7 +29,7 @@ helpmsg(){
   echo -e "Remote command, last add command:"
   echo -e "  $ ems go devops ifconfig"
   echo -e ""
-  echo -e "You can also use 'id'' send command to site group"
+  echo -e "You can also use 'id' send command to site group"
   echo -e "  $ ems go -id 0,1 ifconfig"
   echo ""
 }
