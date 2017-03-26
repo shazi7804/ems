@@ -1,2 +1,2 @@
 .DS_Store
-config/site-conf.d/*
+config/site-conf.d/*.conf

@@ -1,4 +1,4 @@
-Group+=(example)
+Group+=(site)
 Alias+=(dev)
 HostName+=(dev)
 Port+=(22)

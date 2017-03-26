@@ -36,30 +36,6 @@ LogFormat(){
   fi
 }
 
-HostList(){
-  local i
-  echo ""
-  echo "Server Info:"
-  echo ""
-  printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'Alias' 'HostName' 'IP'
-  printf "%s\n" "-----------------------------------------------"
-  if [ $1 ]; then
-    filter=$1
-    shift
-    for (( i = 0; i < ${#Alias[@]}; i++ )); do
-      if [[ $filter == ${Type[i]} ]]; then
-        printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" ${Alias[i]} ${Server[i]} ${IP[i]}
-      fi
-    done
-  else
-    for (( i = 0; i < ${#Alias[@]}; i++ )); do
-      printf "   %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n"  ${Alias[i]} ${Server[i]} ${IP[i]}
-    done
-  fi
-  echo ""
-}
-
-
 if [ -f $ems_config]; then
   source $ems_config
 fi

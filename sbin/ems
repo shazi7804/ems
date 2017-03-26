@@ -18,6 +18,7 @@ helpmsg(){
   echo -e "Usage: $0 [option|host] [command]"
   echo ""
   echo -e "[option]"
+  echo -e "  --import-from=[csv]"
   echo -e "  -l                         Filter the displayed type name (default all)"
   echo -e "  -h,--help                  help message."
   echo -e "  -v,--version               show ems version."
@@ -57,7 +58,7 @@ LogFormat(){
 # list all hosts
 HostList(){
   local i j
-  ImportSite
+  CallSite
   echo ""
   echo "--------------------------------------------------"
   printf "  %-3s %-${info_alias_bit}s %-${info_hostname_bit}s %-${info_ip}s\n" 'id' 'Alias' 'HostName' 'IP'
@@ -79,7 +80,28 @@ HostList(){
   echo ""
 }
 
-ImportSite(){
+# need IMPORT_LIST arguments. 
+ImportFrom(){
+  CSV_FILE=$1
+  # If no data be "NA"
+  # f1 = Group
+  # f2 = Alias
+  # f3 = HostName
+  # f4 = Port
+  # f5 = IP
+  while IFS="," read f1 f2 f3 f4 f5
+  do
+tee -a $ems_sitelist/$f1.conf <<EOF
+Group+=($f1)
+Alias+=($f2)
+HostName+=($f3)
+Port+=($f4)
+IP+=($f5)
+EOF
+  done < $CSV_FILE
+}
+
+CallSite(){
   # import all site
   allsite=($(find $ems_sitelist -type f -name "*.conf"))
   if find $ems_sitelist -type f -name "*.conf" &>/dev/null; then
@@ -171,20 +193,6 @@ if [[ $# -gt 0 ]]; then
   for opt in $@
   do
     case $opt in
-      -g)
-        shift
-        if [ $1 ]; then
-          Listfilter=$1
-          HostList $Listfilter
-        else
-          LogFormat warn You must select a type name !!
-          ImportSite
-          echo ""
-          echo "${Group[@]}" | tr ' ' '\n' | sort -u
-          echo ""
-        fi
-        exit 0
-        ;;
       go)
         shift
         if [[ $1 == '--id' ]]; then
@@ -194,14 +202,14 @@ if [[ $# -gt 0 ]]; then
           shift
           if [ $1 ]; then
             CMD=$@
-            ImportSite
+            CallSite
             Remotecmd
           else
             echo "'--id' need 'command' arguments."
             exit 1
           fi
         else  
-          ImportSite
+          CallSite
           Host=$1
           shift
           if [ "$1" ]; then
@@ -211,6 +219,25 @@ if [[ $# -gt 0 ]]; then
             RemoteLogin
           fi
         fi
+        ;;
+      -g)
+        shift
+        if [ $1 ]; then
+          Listfilter=$1
+          HostList $Listfilter
+        else
+          LogFormat warn You must select a type name !!
+          CallSite
+          echo ""
+          echo "${Group[@]}" | tr ' ' '\n' | sort -u
+          echo ""
+        fi
+        exit 0
+        ;;
+      --import-from=*)
+        CSV="${opt#*=}"
+        ImportFrom $CSV
+        #IMPORT_LIST=($(cat $IMPORT_FROM))
         ;;
     esac
   done
