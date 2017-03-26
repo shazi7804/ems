@@ -87,16 +87,18 @@ ImportFrom(){
   # f1 = Group
   # f2 = Alias
   # f3 = HostName
-  # f4 = Port
-  # f5 = IP
-  while IFS="," read f1 f2 f3 f4 f5
+  # f4 = User
+  # f5 = Port
+  # f6 = IP
+  while IFS="," read f1 f2 f3 f4 f5 f6
   do
 tee -a $ems_sitelist/$f1.conf <<EOF
 Group+=($f1)
 Alias+=($f2)
 HostName+=($f3)
-Port+=($f4)
-IP+=($f5)
+User+=($f4)
+Port+=($f5)
+IP+=($f6)
 EOF
   done < $CSV_FILE
 }
@@ -123,7 +125,7 @@ RemoteLogin(){
   if [ $Host ]; then
     for (( i = 0; i <${#HostName[@]}; i++ )); do
       if [ $Host == ${Alias[i]} ]; then
-        if [ -n $ems_USER ]; then
+        if [ ${User[i]} == 'NA' ]; then
           ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[i]}
         else
           ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]}
@@ -141,7 +143,7 @@ Remotecmd(){
     for (( i = 0; i <${#Ids[@]}; i++ )); do
       for (( j = 0; j <${#Alias[@]}; j++ )); do
         if [[ ${Ids[i]} == $j ]]; then
-          if [ -n $ems_USER ]; then
+          if [ ${User[i]} == 'NA' ]; then
             ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[j]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[j]} "$CMD"
           else
             ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[j]} -o ConnectTimeout=$Time_Retry ${User[j]}@${IP[j]} "$CMD"
@@ -152,7 +154,7 @@ Remotecmd(){
   elif [[ -n $Host ]] && [[ -n $CMD ]]; then
     for (( i = 0; i <${#HostName[@]}; i++ )); do
       if [[ $Host == ${Alias[i]} ]]; then
-        if [ -n $ems_USER ]; then
+        if [ ${User[i]} == 'NA' ]; then
           ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[i]} "$CMD"
         else
           ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]} "$CMD"

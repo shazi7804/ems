@@ -38,6 +38,15 @@ You can also use 'id' send command to site group
 $ ems go --id 0,1 sudo touch testfile
 ```
 
+### Import site
+You must use the file import
+
+Group,Alias,HostName,Port,IP
+
+example:
+```
+dev,dev01,devserver,22,192.168.0.2
+```
 
 ### Site List setting
 Add you site setting
@@ -53,6 +62,9 @@ Set your site alias login.
 
 - HostName
 Display hostname for identification.
+
+- User
+Login user, if use default user insert 'NA'.
 
 - Port
 The remote port.
