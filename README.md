@@ -36,7 +36,7 @@ $ ems go --id 0,1 sudo touch testfile
 ### Import site
 You must use the file import
 
-Group,Alias,HostName,Port,IP
+`Group`,`Alias`,`HostName`,`Port`,`IP`
 
 example:
 ```
@@ -46,7 +46,7 @@ dev,dev01,devserver,22,192.168.0.2
 ### Site List setting
 Add you site setting
 ```
-vi /etc/ems/site-conf.d/mysite.conf
+$ vi /etc/ems/site-conf.d/mysite.conf
 ```
 
 - Group
