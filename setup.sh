@@ -118,11 +118,14 @@ EOF
   # init key
   test -d ${GENUSER_HOME}/.ems/key || mkdir -p ${GENUSER_HOME}/.ems/key
   ssh-keygen -t rsa -b 4096 -q -f ${GENUSER_HOME}/.ems/key/${GENUSER}.secrets -P ''
+  # rename public key
+  mv ${GENUSER_HOME}/.ems/key/${GENUSER}.secrets.pub ${GENUSER_HOME}/.ems/key/${GENUSER}.secrets.public
   if [[ $? -eq "0" ]]; then
     WorkingStatus OK "Initialize ${GENUSER}"
   else
     WorkingStatus Fail "Initialize ${GENUSER}"
   fi
+  exit 0
 }
 
 
