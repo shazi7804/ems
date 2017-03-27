@@ -117,7 +117,7 @@ EOF
 
   # init key
   test -d ${GENUSER_HOME}/.ems/key || mkdir -p ${GENUSER_HOME}/.ems/key
-  ssh-keygen -t rsa -b 4096 -q -f ${GENUSER_HOME}/.ems/key/${GENUSER}.secret -P ''
+  ssh-keygen -t rsa -b 4096 -q -f ${GENUSER_HOME}/.ems/key/${GENUSER}.secrets -P ''
   if [[ $? -eq "0" ]]; then
     WorkingStatus OK "Initialize ${GENUSER}"
   else

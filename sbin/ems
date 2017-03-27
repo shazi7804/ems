@@ -18,7 +18,8 @@ helpmsg(){
   echo -e "Usage: $0 [option|host] [command]"
   echo ""
   echo -e "[option]"
-  echo -e "  --import-from=[csv]"
+  echo -e "  --import-from-all=[csv]    import All site list."
+  echo -e "  --import-from-add=[csv]    import Add site list."
   echo -e "  -l                         Filter the displayed type name (default all)"
   echo -e "  -h,--help                  help message."
   echo -e "  -v,--version               show ems version."
@@ -152,9 +153,9 @@ RemoteLogin(){
     for (( i = 0; i <${#HostName[@]}; i++ )); do
       if [ $Host == ${Alias[i]} ]; then
         if [ ${User[i]} == 'NA' ]; then
-          ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[i]}
+          ssh -i ${OWNER_HOME}/.ems/key/${OWNER}.secrets -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[i]}
         else
-          ssh -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]}
+          ssh -i ${OWNER_HOME}/.ems/key/${OWNER}.secrets -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]}
         fi
       fi
     done
@@ -170,9 +171,9 @@ Remotecmd(){
       for (( j = 0; j <${#Alias[@]}; j++ )); do
         if [[ ${Ids[i]} == $j ]]; then
           if [ ${User[i]} == 'NA' ]; then
-            ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[j]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[j]} "$CMD"
+            ssh -t -i ${OWNER_HOME}/.ems/key/${OWNER}.secrets -2 -p ${Port[j]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[j]} "$CMD"
           else
-            ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[j]} -o ConnectTimeout=$Time_Retry ${User[j]}@${IP[j]} "$CMD"
+            ssh -t -i ${OWNER_HOME}/.ems/key/${OWNER}.secrets -2 -p ${Port[j]} -o ConnectTimeout=$Time_Retry ${User[j]}@${IP[j]} "$CMD"
           fi
         fi
       done
@@ -181,9 +182,9 @@ Remotecmd(){
     for (( i = 0; i <${#HostName[@]}; i++ )); do
       if [[ $Host == ${Alias[i]} ]]; then
         if [ ${User[i]} == 'NA' ]; then
-          ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[i]} "$CMD"
+          ssh -t -i ${OWNER_HOME}/.ems/key/${OWNER}.secrets -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${ems_USER}@${IP[i]} "$CMD"
         else
-          ssh -t -i ${ems_keydir}/$ems_keyname -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]} "$CMD"
+          ssh -t -i ${OWNER_HOME}/.ems/key/${OWNER}.secrets -2 -p ${Port[i]} -o ConnectTimeout=$Time_Retry ${User[i]}@${IP[i]} "$CMD"
         fi
       fi
     done
