@@ -1,15 +1,25 @@
 # What is this?
  The ems (Easy Manage Server) is conducive to the management system and security considerations of system, using bash development
 
+## Features
+- Simple Login Server
+- Multiple manager
+- 
+
 ## Support & Requirements
 - OS: CentOS, Ubuntu, Debian, Cygwin, MacOS
 - openssh-client
 
-
 ## HowTo Install
+
 ```
 $ ./chmod +x setup.sh
-$ ./setup.sh --user=shazi7804
+$ ./setup.sh
+```
+
+Add other manager
+```
+$ ./setup.sh --add-user=username
 ```
 
 ### ems command
@@ -41,6 +51,11 @@ You must use the file import
 example:
 ```
 dev,dev01,devserver,user01,22,192.168.0.2
+```
+
+Import site from file
+```
+$ sudo ems --import-from-all=file.csv
 ```
 
 ### Site List setting

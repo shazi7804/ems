@@ -32,7 +32,7 @@ helpmsg(){
   echo -e "  $ ems go devops ifconfig"
   echo -e ""
   echo -e "You can also use 'id' send command to site group"
-  echo -e "  $ ems go -id 0,1 ifconfig"
+  echo -e "  $ ems go --id 0,1 ifconfig"
   echo ""
 }
 
