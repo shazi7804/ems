@@ -23,7 +23,7 @@ Add other manager
 $ ./setup.sh --add-user=username
 ```
 
-### ems command
+### Command line
 You can login quickly
 ```
 $ ems go mysite
@@ -59,7 +59,7 @@ Import site from file
 $ sudo ems --import-from-all=file.csv
 ```
 
-### Site List setting
+### Site list setting
 Add you site setting
 ```
 $ vi /etc/ems/site-conf.d/mysite.conf
