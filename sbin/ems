@@ -83,7 +83,6 @@ HostList(){
 # need IMPORT_LIST arguments. 
 ImportFromAdd(){
   CSV_FILE=$1
-  find $ems_sitelist -type f -iname "*.conf" -delete
   # If no data be "NA"
   # f1 = Group
   # f2 = Alias
@@ -106,6 +105,7 @@ EOF
 
 # need IMPORT_LIST arguments. 
 ImportFromALL(){
+  find $ems_sitelist -type f -iname "*.conf" -delete
   CSV_FILE=$1
   # If no data be "NA"
   # f1 = Group
