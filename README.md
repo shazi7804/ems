@@ -66,19 +66,25 @@ $ vi /etc/ems/site-conf.d/mysite.conf
 ```
 
 - Group
+
 You can sort site types. 
 
 - Alias
+
 Set your site alias login.
 
 - HostName
+
 Display hostname for identification.
 
 - User
+
 Login user, if use default user insert 'NA'.
 
 - Port
+
 The remote port.
 
 - IP
+
 The remote ip or domain.
