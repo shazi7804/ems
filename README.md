@@ -62,7 +62,7 @@ $ sudo ems --import-from-all=file.csv
 ### Site list setting
 Add you site setting
 ```
-$ vi /etc/ems/site-conf.d/mysite.conf
+$ vi /usr/local/ems/config/site-conf.d/mysite.conf
 ```
 
 - Group
