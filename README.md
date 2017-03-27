@@ -12,11 +12,6 @@ $ ./chmod +x setup.sh
 $ ./setup.sh --user=shazi7804
 ```
 
-## HowTo add host
-```
-ems init [IP1,IP2 ...]
-```
-
 ### ems command
 You can login quickly
 ```
