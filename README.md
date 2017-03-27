@@ -4,7 +4,8 @@
 ## Features
 - Simple Login Server
 - Multiple manager
-- 
+- Remote site command
+- Multiple Remote site command 
 
 ## Support & Requirements
 - OS: CentOS, Ubuntu, Debian, Cygwin, MacOS
