@@ -28,7 +28,7 @@ helpmsg() {
   echo "Usage: $0 [option]"
   echo ""
   echo "option:"
-  echo "  --user=USER       set default user for login."
+  echo "  --add-user=USER       only add new user"
   echo ""
 }
 
@@ -84,13 +84,13 @@ Setup(){
       sudo echo ""
       sudo install -d -o $OWNER -m 755 $PREFIX
     else
-      mkdir -p $PREFIX
+      sudo mkdir -p $PREFIX
     fi
   fi
 
   # init ems setting
   WorkingStatus Process "Install ems"
-  cp -R config sbin resources $PREFIX
+  sudo cp -R config sbin resources $PREFIX
 
   if [ -L $PREFIX ]; then
     unlink $PREFIX
@@ -107,16 +107,17 @@ Setup(){
 GenUser(){
   # initialize rsa key
   GENUSER=$1
+  GENUSER_HOME=$(eval echo "~${GENUSER}")
   WorkingStatus Process "Initialize ${GENUSER}"
   # init user setting
-  test -d ~${GENUSER}/.ems || mkdir -p ~${GENUSER}/.ems
-tee -a ~${GENUSER}/.ems/ems.conf <<EOF
+  test -d ${GENUSER_HOME}/.ems || mkdir -p ${GENUSER_HOME}/.ems
+tee -a ${GENUSER_HOME}/.ems/ems.conf <<EOF
 ems_USER=$GENUSER
 EOF
 
   # init key
-  test -d ~${GENUSER}/.ems/key || mkdir -p ~${GENUSER}/.ems/key
-  ssh-keygen -t rsa -b 4096 -q -f ~${GENUSER}/.ems/key/${GENUSER}.secret -P ''
+  test -d ${GENUSER_HOME}/.ems/key || mkdir -p ${GENUSER_HOME}/.ems/key
+  ssh-keygen -t rsa -b 4096 -q -f ${GENUSER_HOME}/.ems/key/${GENUSER}.secret -P ''
   if [[ $? -eq "0" ]]; then
     WorkingStatus OK "Initialize ${GENUSER}"
   else

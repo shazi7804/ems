@@ -92,20 +92,21 @@ ImportFromAdd(){
   # f6 = IP
   while IFS="," read f1 f2 f3 f4 f5 f6
   do
-tee -a $ems_sitelist/$f1.conf <<EOF
+sudo tee -a $ems_sitelist/$f1.conf <<EOF
 Group+=($f1)
 Alias+=($f2)
 HostName+=($f3)
 User+=($f4)
 Port+=($f5)
 IP+=($f6)
+
 EOF
   done < $CSV_FILE
 }
 
 # need IMPORT_LIST arguments. 
 ImportFromALL(){
-  find $ems_sitelist -type f -iname "*.conf" -delete
+  sudo find $ems_sitelist -type f -iname "*.conf" -delete
   CSV_FILE=$1
   # If no data be "NA"
   # f1 = Group
@@ -116,13 +117,14 @@ ImportFromALL(){
   # f6 = IP
   while IFS="," read f1 f2 f3 f4 f5 f6
   do
-tee -a $ems_sitelist/$f1.conf <<EOF
+sudo tee -a $ems_sitelist/$f1.conf <<EOF
 Group+=($f1)
 Alias+=($f2)
 HostName+=($f3)
 User+=($f4)
 Port+=($f5)
 IP+=($f6)
+
 EOF
   done < $CSV_FILE
 }
@@ -213,7 +215,7 @@ OWNER_HOME=$(eval echo "~${OWNER}")
 # include config
 if [ -e $ems_config ]; then
   source $ems_config
-  if [ -e $OWNER_HOME/.ems/ems.conf ]
+  if [ -e $OWNER_HOME/.ems/ems.conf ]; then
     source $OWNER_HOME/.ems/ems.conf
   fi
 else
