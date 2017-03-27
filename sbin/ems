@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Program: The ems (Easy Manage Server) is conducive to the management system and security considerations of system, using bash development.
-# Version: 1.1
+# Version: 1.2
 # Author: shazi
 # Github: https://github.com/shazi7804
 
@@ -81,7 +81,31 @@ HostList(){
 }
 
 # need IMPORT_LIST arguments. 
-ImportFrom(){
+ImportFromAdd(){
+  CSV_FILE=$1
+  find $ems_sitelist -type f -iname "*.conf" -delete
+  # If no data be "NA"
+  # f1 = Group
+  # f2 = Alias
+  # f3 = HostName
+  # f4 = User
+  # f5 = Port
+  # f6 = IP
+  while IFS="," read f1 f2 f3 f4 f5 f6
+  do
+tee -a $ems_sitelist/$f1.conf <<EOF
+Group+=($f1)
+Alias+=($f2)
+HostName+=($f3)
+User+=($f4)
+Port+=($f5)
+IP+=($f6)
+EOF
+  done < $CSV_FILE
+}
+
+# need IMPORT_LIST arguments. 
+ImportFromALL(){
   CSV_FILE=$1
   # If no data be "NA"
   # f1 = Group
@@ -183,9 +207,15 @@ case $@ in
     ;;
 esac
 
+OWNER=$(id -nu)
+OWNER_HOME=$(eval echo "~${OWNER}")
+
 # include config
 if [ -e $ems_config ]; then
   source $ems_config
+  if [ -e $OWNER_HOME/.ems/ems.conf ]
+    source $OWNER_HOME/.ems/ems.conf
+  fi
 else
   LogFormat error ems config not found.
   exit 1
@@ -236,11 +266,18 @@ if [[ $# -gt 0 ]]; then
         fi
         exit 0
         ;;
-      --import-from=*)
+      --import-from-add=*)
         CSV="${opt#*=}"
-        ImportFrom $CSV
-        #IMPORT_LIST=($(cat $IMPORT_FROM))
+        ImportFromAdd $CSV
         ;;
+      --import-from-all=*)
+        CSV="${opt#*=}"
+        read -r -p "Use '--import-from-all'' will be rebuild all site list [y/n]: " importyn
+        if [[ $importyn =~ ^([yY][eE][sS]|[yY])$ ]]; then
+          ImportFromALL $CSV
+        elif [[ $importyn =~ ^([nN][oO]|[nN]|'')$ ]]; then
+          exit 0
+        fi
     esac
   done
 else

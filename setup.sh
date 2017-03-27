@@ -4,7 +4,7 @@
 # Author: shazi
 # Github: https://github.com/shazi7804
 
-ems_prefix="/usr/local/ems"
+PREFIX="/usr/local/ems"
 
 Welcome() {
   echo ""
@@ -14,9 +14,9 @@ Welcome() {
   echo "This tool will be installed in accordance with the following environment:"
   echo ""
   echo "OS           = $OSVer"
-  echo "prefix       = $ems_prefix"
-  echo "config       = $ems_prefix/config"
-  echo "sbin         = $ems_prefix/sbin"
+  echo "prefix       = $PREFIX"
+  echo "config       = $PREFIX/config"
+  echo "sbin         = $PREFIX/sbin"
   echo "user         = $USER"
   echo ""
   read -n1 -r -p "ems is ready to be installed, press any key to continue..."
@@ -70,47 +70,57 @@ WorkingStatus() {
   fi
 }
 
-ems_setup(){
-  owner=$(id -nu)
-  if [ -d $ems_prefix ]; then
+# setup only owner user
+Setup(){
+  OWNER=$(id -nu)
+
+  # init ems prefix
+  if [ -d $PREFIX ]; then
     echo "Directory already exists, ems has been installed?"
     exit 1
   else
     if [[ "MacOS" == $OSVer ]]; then
       echo "OS type is $OSVer .. need permissions."
       sudo echo ""
-      sudo install -d -o $owner -m 755 $ems_prefix
+      sudo install -d -o $OWNER -m 755 $PREFIX
     else
-      mkdir -p $ems_prefix
+      mkdir -p $PREFIX
     fi
   fi
 
+  # init ems setting
   WorkingStatus Process "Install ems"
-  cp -R config sbin resources $ems_prefix
+  cp -R config sbin resources $PREFIX
 
-  if [ -L $ems_prefix ]; then
-    unlink $ems_prefix
+  if [ -L $PREFIX ]; then
+    unlink $PREFIX
   fi
 
-  sudo -u $owner ln -fs $ems_prefix/sbin/ems* /usr/local/bin/
-  
-  sudo -u $owner chmod 755 $ems_prefix/sbin/ems
   if [[ $? -ne 0 ]]; then
     WorkingStatus Fail "Install ems"
   else
     WorkingStatus OK "Install ems"
   fi
+  GenUser $OWNER
+}
 
+GenUser(){
   # initialize rsa key
-  WorkingStatus Process "Initialize ems key"
-  test -d $ems_prefix/key || mkdir -p $ems_prefix/key
-  if [ ! -z $ems_prefix/key ];then
-    ssh-keygen -t rsa -b 4096 -q -f $ems_prefix/key/ems.secret -P ''
-    if [[ $? -eq "0" ]]; then
-      WorkingStatus OK "Initialize ems key"
-    else
-      WorkingStatus Fail "Initialize ems key"
-    fi
+  GENUSER=$1
+  WorkingStatus Process "Initialize ${GENUSER}"
+  # init user setting
+  test -d ~${GENUSER}/.ems || mkdir -p ~${GENUSER}/.ems
+tee -a ~${GENUSER}/.ems/ems.conf <<EOF
+ems_USER=$GENUSER
+EOF
+
+  # init key
+  test -d ~${GENUSER}/.ems/key || mkdir -p ~${GENUSER}/.ems/key
+  ssh-keygen -t rsa -b 4096 -q -f ~${GENUSER}/.ems/key/${GENUSER}.secret -P ''
+  if [[ $? -eq "0" ]]; then
+    WorkingStatus OK "Initialize ${GENUSER}"
+  else
+    WorkingStatus Fail "Initialize ${GENUSER}"
   fi
 }
 
@@ -118,10 +128,10 @@ ems_setup(){
 for opt in $@
 do
   case $opt in
-    --user=*)
+    --add-user=*)
       shift
       USER="${opt#*=}"
-      shift
+      GenUser $USER
       ;;
     -h|--help)
       helpmsg
@@ -132,7 +142,7 @@ done
 
 OSType
 Welcome
-ems_setup
+Setup
 
 echo ""
 echo "Installation successful !! You can enjoy the ems."
